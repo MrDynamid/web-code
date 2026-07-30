@@ -1,0 +1,123 @@
+import type { Metadata } from 'next'
+import Image from 'next/image'
+import Link from 'next/link'
+import { notFound } from 'next/navigation'
+import {
+  Accordion,
+  AccordionContent,
+  AccordionItem,
+  AccordionTrigger,
+} from '@/components/ui/accordion'
+import { ProductPurchase } from '@/components/product-purchase'
+import { ProductRail } from '@/components/home/product-rail'
+import { getProductBySlug, getRelatedProducts } from '@/lib/products'
+
+export async function generateMetadata({
+  params,
+}: {
+  params: Promise<{ slug: string }>
+}): Promise<Metadata> {
+  const { slug } = await params
+  const product = await getProductBySlug(slug)
+  if (!product) return { title: 'Not found' }
+  return {
+    title: product.name,
+    description: product.description,
+  }
+}
+
+export default async function ProductPage({
+  params,
+}: {
+  params: Promise<{ slug: string }>
+}) {
+  const { slug } = await params
+  const product = await getProductBySlug(slug)
+  if (!product) notFound()
+
+  const related = await getRelatedProducts(product, 4)
+
+  return (
+    <div className="mx-auto max-w-7xl px-4 py-8 md:px-6 md:py-12">
+      <nav className="mb-8 flex items-center gap-2 text-xs tracking-[0.08em] text-muted-foreground uppercase">
+        <Link href="/" className="transition-colors hover:text-foreground">
+          Home
+        </Link>
+        <span>/</span>
+        <Link
+          href={`/products?category=${encodeURIComponent(product.category)}`}
+          className="transition-colors hover:text-foreground"
+        >
+          {product.category}
+        </Link>
+        <span>/</span>
+        <span className="text-foreground">{product.name}</span>
+      </nav>
+
+      <div className="grid gap-10 lg:grid-cols-2 lg:gap-16">
+        <div className="grid gap-4">
+          <div className="relative aspect-3/4 overflow-hidden rounded-sm bg-muted">
+            <Image
+              src={product.images[0] || '/placeholder.svg'}
+              alt={product.name}
+              fill
+              priority
+              sizes="(min-width: 1024px) 50vw, 100vw"
+              className="object-cover"
+            />
+            {product.badge && (
+              <span className="absolute top-4 left-4 rounded-full bg-gold px-3 py-1 text-[10px] font-medium tracking-[0.12em] text-gold-foreground uppercase">
+                {product.badge}
+              </span>
+            )}
+          </div>
+        </div>
+
+        <div className="lg:py-4">
+          <ProductPurchase product={product} />
+
+          <Accordion className="mt-8">
+            <AccordionItem value="details">
+              <AccordionTrigger className="text-sm tracking-[0.08em] uppercase">
+                Details
+              </AccordionTrigger>
+              <AccordionContent className="text-sm leading-relaxed text-muted-foreground">
+                {product.details ?? product.description}
+              </AccordionContent>
+            </AccordionItem>
+            {product.materials && (
+              <AccordionItem value="materials">
+                <AccordionTrigger className="text-sm tracking-[0.08em] uppercase">
+                  Materials &amp; Care
+                </AccordionTrigger>
+                <AccordionContent className="text-sm leading-relaxed text-muted-foreground">
+                  {product.materials}. Follow the care label to keep this piece at its best.
+                </AccordionContent>
+              </AccordionItem>
+            )}
+            <AccordionItem value="shipping">
+              <AccordionTrigger className="text-sm tracking-[0.08em] uppercase">
+                Shipping &amp; Returns
+              </AccordionTrigger>
+              <AccordionContent className="text-sm leading-relaxed text-muted-foreground">
+                Complimentary shipping on orders over $200. Enjoy free 30-day returns on all
+                unworn pieces with original tags attached.
+              </AccordionContent>
+            </AccordionItem>
+          </Accordion>
+        </div>
+      </div>
+
+      {related.length > 0 && (
+        <div className="mt-8">
+          <ProductRail
+            eyebrow="You may also like"
+            title="Complete the look"
+            viewAllHref={`/products?category=${encodeURIComponent(product.category)}`}
+            products={related}
+          />
+        </div>
+      )}
+    </div>
+  )
+}
