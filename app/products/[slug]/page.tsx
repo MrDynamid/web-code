@@ -11,6 +11,7 @@ import {
 import { ProductPurchase } from '@/components/product-purchase'
 import { ProductRail } from '@/components/home/product-rail'
 import { getProductBySlug, getRelatedProducts } from '@/lib/products'
+import { getWishlistIds } from '@/app/actions/wishlist'
 
 export async function generateMetadata({
   params,
@@ -35,7 +36,11 @@ export default async function ProductPage({
   const product = await getProductBySlug(slug)
   if (!product) notFound()
 
-  const related = await getRelatedProducts(product, 4)
+  const [related, wishlistIds] = await Promise.all([
+    getRelatedProducts(product, 4),
+    getWishlistIds(),
+  ])
+  const wishlisted = new Set(wishlistIds)
 
   return (
     <div className="mx-auto max-w-7xl px-4 py-8 md:px-6 md:py-12">
@@ -74,7 +79,7 @@ export default async function ProductPage({
         </div>
 
         <div className="lg:py-4">
-          <ProductPurchase product={product} />
+          <ProductPurchase product={product} wishlisted={wishlisted.has(product.id)} />
 
           <Accordion className="mt-8">
             <AccordionItem value="details">
@@ -100,7 +105,7 @@ export default async function ProductPage({
                 Shipping &amp; Returns
               </AccordionTrigger>
               <AccordionContent className="text-sm leading-relaxed text-muted-foreground">
-                Complimentary shipping on orders over $200. Enjoy free 30-day returns on all
+                Complimentary shipping on orders over ₹20,000. Enjoy free 30-day returns on all
                 unworn pieces with original tags attached.
               </AccordionContent>
             </AccordionItem>
@@ -115,6 +120,7 @@ export default async function ProductPage({
             title="Complete the look"
             viewAllHref={`/products?category=${encodeURIComponent(product.category)}`}
             products={related}
+            wishlistedIds={wishlistIds}
           />
         </div>
       )}

@@ -17,9 +17,9 @@ export const CATEGORIES = [
 export type SortOption = 'featured' | 'price-asc' | 'price-desc' | 'newest'
 
 export function formatPrice(cents: number): string {
-  return new Intl.NumberFormat('en-US', {
+  return new Intl.NumberFormat('en-IN', {
     style: 'currency',
-    currency: 'USD',
+    currency: 'INR',
     minimumFractionDigits: 0,
     maximumFractionDigits: 0,
   }).format(cents / 100)

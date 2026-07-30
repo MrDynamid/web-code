@@ -265,8 +265,46 @@ async function seedBanners() {
   }
 }
 
+async function createOrderTables() {
+  await pool.query(`
+    CREATE TABLE IF NOT EXISTS orders (
+      id serial PRIMARY KEY,
+      "userId" text NOT NULL,
+      email text NOT NULL,
+      full_name text NOT NULL,
+      address text NOT NULL,
+      city text NOT NULL,
+      state text NOT NULL,
+      zip text NOT NULL,
+      phone text,
+      items jsonb NOT NULL DEFAULT '[]'::jsonb,
+      subtotal integer NOT NULL,
+      shipping integer NOT NULL DEFAULT 0,
+      total integer NOT NULL,
+      currency text NOT NULL DEFAULT 'INR',
+      status text NOT NULL DEFAULT 'created',
+      razorpay_order_id text,
+      razorpay_payment_id text,
+      created_at timestamptz NOT NULL DEFAULT now()
+    )
+  `)
+  await pool.query(`
+    CREATE TABLE IF NOT EXISTS wishlist (
+      id serial PRIMARY KEY,
+      "userId" text NOT NULL,
+      product_id integer NOT NULL,
+      created_at timestamptz NOT NULL DEFAULT now()
+    )
+  `)
+  await pool.query(`
+    CREATE UNIQUE INDEX IF NOT EXISTS wishlist_user_product_idx
+    ON wishlist ("userId", product_id)
+  `)
+}
+
 async function main() {
   await createAuthTables()
+  await createOrderTables()
   await seedProducts()
   await seedBanners()
 

@@ -4,11 +4,18 @@ import { useState } from 'react'
 import { Minus, Plus, ShoppingBag, Check } from 'lucide-react'
 import { toast } from 'sonner'
 import { Button } from '@/components/ui/button'
+import { WishlistButton } from '@/components/wishlist-button'
 import { formatPrice, type Product } from '@/lib/product-utils'
 import { useCart } from '@/lib/cart-context'
 import { cn } from '@/lib/utils'
 
-export function ProductPurchase({ product }: { product: Product }) {
+export function ProductPurchase({
+  product,
+  wishlisted = false,
+}: {
+  product: Product
+  wishlisted?: boolean
+}) {
   const { addItem } = useCart()
   const [color, setColor] = useState(product.colors[0] ?? 'Default')
   const [size, setSize] = useState(product.sizes[0] ?? 'One Size')
@@ -125,12 +132,17 @@ export function ProductPurchase({ product }: { product: Product }) {
           <ShoppingBag className="size-4" strokeWidth={1.5} />
           Add to bag
         </Button>
+        <WishlistButton
+          productId={product.id}
+          initialWishlisted={wishlisted}
+          variant="inline"
+        />
       </div>
 
       <ul className="space-y-2 border-t border-border pt-6 text-sm text-muted-foreground">
         <li className="flex items-center gap-2">
           <Check className="size-4 text-gold" strokeWidth={2} />
-          Complimentary shipping on orders over $200
+          Complimentary shipping on orders over ₹20,000
         </li>
         <li className="flex items-center gap-2">
           <Check className="size-4 text-gold" strokeWidth={2} />

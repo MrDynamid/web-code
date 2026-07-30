@@ -2,6 +2,7 @@ import type { Metadata } from 'next'
 import { ProductCard } from '@/components/product-card'
 import { ProductFilters } from '@/components/product-filters'
 import { getAllProducts } from '@/lib/products'
+import { getWishlistIds } from '@/app/actions/wishlist'
 import { CATEGORIES, type SortOption } from '@/lib/product-utils'
 
 export const metadata: Metadata = {
@@ -31,10 +32,14 @@ export default async function ProductsPage({
   const activeCategory = normalizeCategory(params.category)
   const activeSort = normalizeSort(params.sort)
 
-  const products = await getAllProducts({
-    category: activeCategory,
-    sort: activeSort,
-  })
+  const [products, wishlistIds] = await Promise.all([
+    getAllProducts({
+      category: activeCategory,
+      sort: activeSort,
+    }),
+    getWishlistIds(),
+  ])
+  const wishlisted = new Set(wishlistIds)
 
   return (
     <div className="mx-auto max-w-7xl px-4 py-12 md:px-6 md:py-16">
@@ -67,7 +72,12 @@ export default async function ProductsPage({
       ) : (
         <div className="mt-10 grid grid-cols-2 gap-x-4 gap-y-10 lg:grid-cols-4">
           {products.map((product, i) => (
-            <ProductCard key={product.id} product={product} priority={i < 4} />
+            <ProductCard
+              key={product.id}
+              product={product}
+              priority={i < 4}
+              wishlisted={wishlisted.has(product.id)}
+            />
           ))}
         </div>
       )}

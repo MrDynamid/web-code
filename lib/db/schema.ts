@@ -1,6 +1,7 @@
 import {
   boolean,
   integer,
+  jsonb,
   numeric,
   pgTable,
   serial,
@@ -103,3 +104,48 @@ export const banners = pgTable('banners', {
 })
 
 export type Banner = typeof banners.$inferSelect
+
+// Line items are stored as JSON so an order is a self-contained snapshot even
+// if the underlying product later changes or is removed.
+export type OrderItem = {
+  id: number
+  slug: string
+  name: string
+  image: string
+  color: string
+  size: string
+  price: number
+  quantity: number
+}
+
+export const orders = pgTable('orders', {
+  id: serial('id').primaryKey(),
+  userId: text('userId').notNull(),
+  email: text('email').notNull(),
+  fullName: text('full_name').notNull(),
+  address: text('address').notNull(),
+  city: text('city').notNull(),
+  state: text('state').notNull(),
+  zip: text('zip').notNull(),
+  phone: text('phone'),
+  items: jsonb('items').$type<OrderItem[]>().notNull().default([]),
+  subtotal: integer('subtotal').notNull(),
+  shipping: integer('shipping').notNull().default(0),
+  total: integer('total').notNull(),
+  currency: text('currency').notNull().default('INR'),
+  status: text('status').notNull().default('created'),
+  razorpayOrderId: text('razorpay_order_id'),
+  razorpayPaymentId: text('razorpay_payment_id'),
+  createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+})
+
+export type Order = typeof orders.$inferSelect
+
+export const wishlist = pgTable('wishlist', {
+  id: serial('id').primaryKey(),
+  userId: text('userId').notNull(),
+  productId: integer('product_id').notNull(),
+  createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+})
+
+export type WishlistRow = typeof wishlist.$inferSelect

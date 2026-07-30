@@ -15,7 +15,7 @@ const PROPS = [
   {
     icon: Package,
     title: 'Complimentary shipping',
-    body: 'On all orders over $200, delivered with care.',
+    body: 'On all orders over ₹15,000, delivered with care.',
   },
   {
     icon: RefreshCw,

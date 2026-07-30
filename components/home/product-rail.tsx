@@ -9,14 +9,18 @@ export function ProductRail({
   viewAllHref,
   products,
   priority = false,
+  wishlistedIds = [],
 }: {
   eyebrow: string
   title: string
   viewAllHref: string
   products: Product[]
   priority?: boolean
+  wishlistedIds?: number[]
 }) {
   if (products.length === 0) return null
+
+  const wishlisted = new Set(wishlistedIds)
 
   return (
     <section className="mx-auto max-w-7xl px-4 py-10 md:px-6">
@@ -37,7 +41,11 @@ export function ProductRail({
       <div className="grid grid-cols-2 gap-x-4 gap-y-10 lg:grid-cols-4">
         {products.map((product, i) => (
           <ScrollReveal key={product.id} direction="up" delay={(i % 4) * 100}>
-            <ProductCard product={product} priority={priority && i < 4} />
+            <ProductCard
+              product={product}
+              priority={priority && i < 4}
+              wishlisted={wishlisted.has(product.id)}
+            />
           </ScrollReveal>
         ))}
       </div>

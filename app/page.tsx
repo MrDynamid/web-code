@@ -5,12 +5,14 @@ import { ValueProps } from '@/components/home/value-props'
 import { EditorialBanner } from '@/components/home/editorial-banner'
 import { getFeaturedProducts, getNewArrivals } from '@/lib/products'
 import { getActiveBanners } from '@/lib/banners'
+import { getWishlistIds } from '@/app/actions/wishlist'
 
 export default async function HomePage() {
-  const [featured, newArrivals, banners] = await Promise.all([
+  const [featured, newArrivals, banners, wishlistIds] = await Promise.all([
     getFeaturedProducts(4),
     getNewArrivals(4),
     getActiveBanners(),
+    getWishlistIds(),
   ])
 
   // The first active banner drives the hero; the rest become editorial
@@ -26,6 +28,7 @@ export default async function HomePage() {
         viewAllHref="/products"
         products={featured}
         priority
+        wishlistedIds={wishlistIds}
       />
       <CategoryGrid />
       <EditorialBanner banner={editorialBanners[0]} />
@@ -34,6 +37,7 @@ export default async function HomePage() {
         title="New arrivals"
         viewAllHref="/products?sort=newest"
         products={newArrivals}
+        wishlistedIds={wishlistIds}
       />
       {editorialBanners[1] && <EditorialBanner banner={editorialBanners[1]} reverse />}
       <ValueProps />
