@@ -118,6 +118,19 @@ export type OrderItem = {
   quantity: number
 }
 
+export const coupons = pgTable('coupons', {
+  id: serial('id').primaryKey(),
+  code: text('code').notNull().unique(),
+  label: text('label').notNull().default('Promo code'),
+  type: text('type').notNull().default('percentage'),
+  value: integer('value').notNull().default(0),
+  minOrder: integer('min_order').notNull().default(0),
+  active: boolean('active').notNull().default(true),
+  createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+})
+
+export type Coupon = typeof coupons.$inferSelect
+
 export const orders = pgTable('orders', {
   id: serial('id').primaryKey(),
   userId: text('userId').notNull(),
@@ -131,6 +144,8 @@ export const orders = pgTable('orders', {
   items: jsonb('items').$type<OrderItem[]>().notNull().default([]),
   subtotal: integer('subtotal').notNull(),
   shipping: integer('shipping').notNull().default(0),
+  discount: integer('discount').notNull().default(0),
+  couponCode: text('coupon_code'),
   total: integer('total').notNull(),
   currency: text('currency').notNull().default('INR'),
   status: text('status').notNull().default('created'),

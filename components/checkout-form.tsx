@@ -11,7 +11,7 @@ import { Label } from '@/components/ui/label'
 import { Separator } from '@/components/ui/separator'
 import { lineKey, useCart } from '@/lib/cart-context'
 import { formatPrice } from '@/lib/product-utils'
-import { createOrder, verifyPayment, markOrderDemoPaid } from '@/app/actions/orders'
+import { createOrder, verifyPayment } from '@/app/actions/orders'
 
 const FREE_SHIPPING_THRESHOLD = 20000
 const SHIPPING_FEE = 1200
@@ -39,9 +39,10 @@ export function CheckoutForm({ userEmail }: { userEmail: string }) {
   const router = useRouter()
   const { items, subtotal, hydrated, clear } = useCart()
   const [placing, setPlacing] = useState(false)
+  const [discountAmount, setDiscountAmount] = useState(0)
 
   const shipping = subtotal >= FREE_SHIPPING_THRESHOLD || subtotal === 0 ? 0 : SHIPPING_FEE
-  const total = subtotal + shipping
+  const estimatedTotal = Math.max(0, subtotal + shipping - discountAmount)
 
   useEffect(() => {
     void loadRazorpay()
@@ -63,6 +64,7 @@ export function CheckoutForm({ userEmail }: { userEmail: string }) {
       zip: String(data.get('zip') || ''),
       phone: String(data.get('phone') || ''),
     }
+    const couponCode = String(data.get('couponCode') || '').trim()
 
     const cart = items.map((i) => ({
       id: i.id,
@@ -72,21 +74,19 @@ export function CheckoutForm({ userEmail }: { userEmail: string }) {
     }))
 
     try {
-      const result = await createOrder(cart, shippingDetails)
+      const result = await createOrder(cart, shippingDetails, couponCode)
       if (!result.ok) {
         toast.error(result.error)
         setPlacing(false)
         return
       }
 
-      // Demo mode: Razorpay keys not configured — confirm without a charge.
-      if (!result.configured || !result.razorpayOrderId || !result.keyId) {
-        await markOrderDemoPaid(result.orderDbId)
-        clear()
-        toast.success('Order placed', {
-          description: 'Demo mode — no payment was processed. Add Razorpay keys to charge live.',
-        })
-        router.push('/orders')
+      setDiscountAmount(result.discount)
+
+      // Payment wall: an order is never confirmed without a verified Razorpay payment.
+      if (!result.razorpayOrderId || !result.keyId) {
+        toast.error('Online payments are temporarily unavailable. Please try again later.')
+        setPlacing(false)
         return
       }
 
@@ -227,6 +227,22 @@ export function CheckoutForm({ userEmail }: { userEmail: string }) {
             </div>
           </section>
 
+          <section className="space-y-4">
+            <h2 className="font-serif text-2xl tracking-tight">Redeem code</h2>
+            <div className="space-y-2">
+              <Label htmlFor="couponCode">Promotion code</Label>
+              <Input
+                id="couponCode"
+                name="couponCode"
+                placeholder="Enter code like FIRST10"
+                autoCapitalize="characters"
+              />
+              <p className="text-xs text-muted-foreground">
+                Use your discount code on checkout. The code is validated server-side before payment.
+              </p>
+            </div>
+          </section>
+
           <section className="space-y-3">
             <h2 className="font-serif text-2xl tracking-tight">Payment</h2>
             <p className="text-sm text-muted-foreground">
@@ -236,7 +252,7 @@ export function CheckoutForm({ userEmail }: { userEmail: string }) {
           </section>
 
           <Button type="submit" disabled={placing || !hydrated} className="h-12 text-sm">
-            {placing ? 'Processing…' : `Pay ${formatPrice(total)}`}
+            {placing ? 'Processing…' : `Pay ${formatPrice(estimatedTotal)}`}
           </Button>
         </form>
 
@@ -279,11 +295,15 @@ export function CheckoutForm({ userEmail }: { userEmail: string }) {
                   {shipping === 0 ? 'Complimentary' : formatPrice(shipping)}
                 </dd>
               </div>
+              <div className="flex items-center justify-between">
+                <dt className="text-muted-foreground">Discount</dt>
+                <dd className="tabular-nums">-{formatPrice(discountAmount)}</dd>
+              </div>
             </dl>
             <Separator className="my-4" />
             <div className="flex items-center justify-between">
               <span className="text-sm text-muted-foreground">Total</span>
-              <span className="font-serif text-2xl tabular-nums">{formatPrice(total)}</span>
+              <span className="font-serif text-2xl tabular-nums">{formatPrice(estimatedTotal)}</span>
             </div>
           </div>
         </aside>

@@ -19,6 +19,15 @@ export async function getSession() {
 export async function requireAdmin() {
   const session = await getSession()
   if (!session?.user) redirect('/admin/sign-in')
+
+  const allowed = (process.env.ADMIN_EMAILS ?? '')
+    .split(',')
+    .map((email) => email.trim().toLowerCase())
+    .filter(Boolean)
+
+  if (allowed.length === 0 || !allowed.includes(session.user.email.toLowerCase())) {
+    redirect('/')
+  }
   return session.user
 }
 

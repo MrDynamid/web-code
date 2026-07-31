@@ -1,4 +1,4 @@
-import { and, asc, desc, eq, ne, sql } from 'drizzle-orm'
+import { and, asc, desc, eq, ilike, ne, or, sql } from 'drizzle-orm'
 import { db } from '@/lib/db'
 import { products, type Product } from '@/lib/db/schema'
 import { type SortOption } from '@/lib/product-utils'
@@ -9,8 +9,9 @@ export { CATEGORIES, formatPrice, type SortOption } from '@/lib/product-utils'
 export async function getAllProducts(options?: {
   category?: string
   sort?: SortOption
+  search?: string
 }): Promise<Product[]> {
-  const { category, sort = 'featured' } = options ?? {}
+  const { category, sort = 'featured', search } = options ?? {}
 
   const orderBy =
     sort === 'price-asc'
@@ -21,10 +22,11 @@ export async function getAllProducts(options?: {
           ? [desc(products.createdAt)]
           : [desc(products.featured), desc(products.reviewCount)]
 
-  const where =
-    category && category !== 'All'
-      ? eq(products.category, category)
-      : undefined
+  const categoryFilter = category && category !== 'All' ? eq(products.category, category) : undefined
+  const searchFilter = search?.trim()
+    ? or(ilike(products.name, `%${search.trim()}%`), ilike(products.description, `%${search.trim()}%`), ilike(products.category, `%${search.trim()}%`))
+    : undefined
+  const where = categoryFilter && searchFilter ? and(categoryFilter, searchFilter) : categoryFilter ?? searchFilter
 
   return db.select().from(products).where(where).orderBy(...orderBy)
 }

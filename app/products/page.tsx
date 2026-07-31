@@ -26,7 +26,7 @@ function normalizeSort(value?: string): SortOption {
 export default async function ProductsPage({
   searchParams,
 }: {
-  searchParams: Promise<{ category?: string; sort?: string }>
+  searchParams: Promise<{ category?: string; sort?: string; q?: string }>
 }) {
   const params = await searchParams
   const activeCategory = normalizeCategory(params.category)
@@ -36,6 +36,7 @@ export default async function ProductsPage({
     getAllProducts({
       category: activeCategory,
       sort: activeSort,
+      search: params.q,
     }),
     getWishlistIds(),
   ])

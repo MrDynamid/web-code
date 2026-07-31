@@ -6,6 +6,7 @@ import { revalidatePath } from 'next/cache'
 import { db } from '@/lib/db'
 import { orders, products, type OrderItem } from '@/lib/db/schema'
 import { getSessionUserId, getSession } from '@/lib/admin-auth'
+import { getActiveCouponByCode } from '@/lib/coupons'
 import { razorpay, razorpayConfigured } from '@/lib/razorpay'
 
 const FREE_SHIPPING_THRESHOLD = 20000
@@ -26,9 +27,9 @@ type CartLine = { id: number; size: string; color: string; quantity: number }
 type CreateOrderResult =
   | {
       ok: true
-      configured: boolean
       orderDbId: number
       amount: number
+      discount: number
       currency: string
       razorpayOrderId: string | null
       keyId: string | null
@@ -44,6 +45,7 @@ type CreateOrderResult =
 export async function createOrder(
   cart: CartLine[],
   shipping: ShippingDetails,
+  couponCode?: string,
 ): Promise<CreateOrderResult> {
   const userId = await getSessionUserId()
 
@@ -87,8 +89,35 @@ export async function createOrder(
     })
   }
 
+  let discount = 0
+  let appliedCouponCode: string | null = null
+
+  if (couponCode?.trim()) {
+    const normalized = couponCode.trim().toUpperCase()
+    const coupon = await getActiveCouponByCode(normalized)
+
+    if (!coupon) {
+      return { ok: false, error: 'That redeem code is invalid or no longer active.' }
+    }
+
+    if (subtotal < coupon.minOrder) {
+      return {
+        ok: false,
+        error: `Spend at least ${Math.round(coupon.minOrder / 100)} rupees to use this code.`,
+      }
+    }
+
+    if (coupon.type === 'percentage') {
+      discount = Math.floor((subtotal * coupon.value) / 100)
+    } else {
+      discount = Math.min(coupon.value, subtotal)
+    }
+
+    appliedCouponCode = coupon.code
+  }
+
   const shippingCost = subtotal >= FREE_SHIPPING_THRESHOLD ? 0 : SHIPPING_FEE
-  const total = subtotal + shippingCost
+  const total = Math.max(0, subtotal + shippingCost - discount)
 
   // Persist the order in a "created" state first so we always have a record.
   const [order] = await db
@@ -105,6 +134,8 @@ export async function createOrder(
       items,
       subtotal,
       shipping: shippingCost,
+      discount,
+      couponCode: appliedCouponCode,
       total,
       currency: 'INR',
       status: 'created',
@@ -117,18 +148,10 @@ export async function createOrder(
     contact: shipping.phone ?? '',
   }
 
-  // If Razorpay isn't configured, return so the UI can show a clear message.
-  if (!razorpayConfigured || !razorpay) {
-    return {
-      ok: true,
-      configured: false,
-      orderDbId: order.id,
-      amount: total,
-      currency: 'INR',
-      razorpayOrderId: null,
-      keyId: null,
-      customer,
-    }
+  // Hard payment wall: checkout cannot succeed when Razorpay is unavailable.
+  if (!razorpayConfigured || !razorpay || !process.env.RAZORPAY_KEY_ID) {
+    await db.update(orders).set({ status: 'payment_unavailable' }).where(eq(orders.id, order.id))
+    return { ok: false, error: 'Online payments are temporarily unavailable.' }
   }
 
   // Razorpay expects the amount in the smallest currency unit (paise).
@@ -146,9 +169,9 @@ export async function createOrder(
 
   return {
     ok: true,
-    configured: true,
     orderDbId: order.id,
     amount: total,
+    discount,
     currency: 'INR',
     razorpayOrderId: rzpOrder.id,
     keyId: process.env.RAZORPAY_KEY_ID ?? null,
@@ -175,6 +198,18 @@ export async function verifyPayment(params: {
     .update(`${params.razorpayOrderId}|${params.razorpayPaymentId}`)
     .digest('hex')
 
+  const [stored] = await db
+    .select({ razorpayOrderId: orders.razorpayOrderId, status: orders.status })
+    .from(orders)
+    .where(and(eq(orders.id, params.orderDbId), eq(orders.userId, userId)))
+    .limit(1)
+
+  if (!stored || stored.razorpayOrderId !== params.razorpayOrderId) {
+    return { ok: false, error: 'Order verification failed.' }
+  }
+
+  if (stored.status === 'paid') return { ok: true }
+
   if (expected !== params.razorpaySignature) {
     await db
       .update(orders)
@@ -194,19 +229,6 @@ export async function verifyPayment(params: {
   revalidatePath('/orders')
   revalidatePath('/account')
   return { ok: true }
-}
-
-/**
- * Marks an order as paid for the demo/unconfigured flow (no real charge).
- */
-export async function markOrderDemoPaid(orderDbId: number) {
-  const userId = await getSessionUserId()
-  await db
-    .update(orders)
-    .set({ status: 'paid' })
-    .where(and(eq(orders.id, orderDbId), eq(orders.userId, userId)))
-  revalidatePath('/orders')
-  revalidatePath('/account')
 }
 
 export async function getUserOrders() {

@@ -1,8 +1,9 @@
 import Link from 'next/link'
-import { ArrowUpRight, Images, Package, Star, TrendingUp } from 'lucide-react'
+import { ArrowUpRight, Images, Package, Star, Tags, TrendingUp } from 'lucide-react'
 import { requireAdmin } from '@/lib/admin-auth'
 import { getAllProducts } from '@/lib/products'
 import { getAllBanners } from '@/lib/banners'
+import { getAllCoupons } from '@/lib/coupons'
 import { formatPrice } from '@/lib/product-utils'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
@@ -10,10 +11,15 @@ import { Button } from '@/components/ui/button'
 export default async function AdminDashboardPage() {
   await requireAdmin()
 
-  const [products, banners] = await Promise.all([getAllProducts(), getAllBanners()])
+  const [products, banners, coupons] = await Promise.all([
+    getAllProducts(),
+    getAllBanners(),
+    getAllCoupons(),
+  ])
 
   const featuredCount = products.filter((p) => p.featured).length
   const activeBanners = banners.filter((b) => b.active).length
+  const activeCoupons = coupons.filter((c) => c.active).length
   const inventoryValue = products.reduce((sum, p) => sum + p.price * p.stock, 0)
   const lowStock = products.filter((p) => p.stock <= 15)
 
@@ -21,6 +27,12 @@ export default async function AdminDashboardPage() {
     { label: 'Products', value: products.length, icon: Package, href: '/admin/products' },
     { label: 'Featured', value: featuredCount, icon: Star, href: '/admin/products' },
     { label: 'Active banners', value: activeBanners, icon: Images, href: '/admin/banners' },
+    {
+      label: 'Active coupons',
+      value: activeCoupons,
+      icon: Tags,
+      href: '/admin/coupons',
+    },
     {
       label: 'Inventory value',
       value: formatPrice(inventoryValue),
@@ -38,7 +50,7 @@ export default async function AdminDashboardPage() {
         <h1 className="mt-2 font-serif text-3xl tracking-tight md:text-4xl">Dashboard</h1>
       </div>
 
-      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+      <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-5">
         {stats.map((stat) => (
           <Link key={stat.label} href={stat.href}>
             <Card className="transition-colors hover:border-gold">
@@ -97,6 +109,11 @@ export default async function AdminDashboardPage() {
             <Button asChild variant="outline" className="justify-start gap-2">
               <Link href="/admin/banners/new">
                 <Images className="size-4" /> Add banner
+              </Link>
+            </Button>
+            <Button asChild variant="outline" className="justify-start gap-2">
+              <Link href="/admin/coupons/new">
+                <Tags className="size-4" /> Add coupon
               </Link>
             </Button>
           </CardContent>

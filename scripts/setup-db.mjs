@@ -267,6 +267,23 @@ async function seedBanners() {
 
 async function createOrderTables() {
   await pool.query(`
+    CREATE TABLE IF NOT EXISTS coupons (
+      id serial PRIMARY KEY,
+      code text NOT NULL UNIQUE,
+      label text NOT NULL DEFAULT 'Promo code',
+      type text NOT NULL DEFAULT 'percentage',
+      value integer NOT NULL DEFAULT 0,
+      min_order integer NOT NULL DEFAULT 0,
+      active boolean NOT NULL DEFAULT true,
+      created_at timestamptz NOT NULL DEFAULT now()
+    )
+  `)
+  await pool.query(`
+    INSERT INTO coupons (code, label, type, value, min_order, active)
+    VALUES ('FIRST10', 'Welcome offer', 'percentage', 10, 0, true)
+    ON CONFLICT (code) DO NOTHING
+  `)
+  await pool.query(`
     CREATE TABLE IF NOT EXISTS orders (
       id serial PRIMARY KEY,
       "userId" text NOT NULL,
@@ -280,6 +297,8 @@ async function createOrderTables() {
       items jsonb NOT NULL DEFAULT '[]'::jsonb,
       subtotal integer NOT NULL,
       shipping integer NOT NULL DEFAULT 0,
+      discount integer NOT NULL DEFAULT 0,
+      coupon_code text,
       total integer NOT NULL,
       currency text NOT NULL DEFAULT 'INR',
       status text NOT NULL DEFAULT 'created',
@@ -287,6 +306,11 @@ async function createOrderTables() {
       razorpay_payment_id text,
       created_at timestamptz NOT NULL DEFAULT now()
     )
+  `)
+  await pool.query(`
+    ALTER TABLE IF EXISTS orders
+      ADD COLUMN IF NOT EXISTS discount integer NOT NULL DEFAULT 0,
+      ADD COLUMN IF NOT EXISTS coupon_code text
   `)
   await pool.query(`
     CREATE TABLE IF NOT EXISTS wishlist (

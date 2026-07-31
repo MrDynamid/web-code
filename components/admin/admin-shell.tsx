@@ -8,7 +8,9 @@ import {
   LayoutDashboard,
   LogOut,
   Package,
+  ShoppingBag,
   Store,
+  Tags,
 } from 'lucide-react'
 import { authClient } from '@/lib/auth-client'
 import { Button } from '@/components/ui/button'
@@ -17,7 +19,9 @@ import { cn } from '@/lib/utils'
 const NAV = [
   { label: 'Dashboard', href: '/admin', icon: LayoutDashboard },
   { label: 'Products', href: '/admin/products', icon: Package },
+  { label: 'Orders', href: '/admin/orders', icon: ShoppingBag },
   { label: 'Banners', href: '/admin/banners', icon: Images },
+  { label: 'Coupons', href: '/admin/coupons', icon: Tags },
 ]
 
 export function AdminShell({

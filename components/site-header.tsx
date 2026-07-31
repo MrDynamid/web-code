@@ -111,12 +111,13 @@ export function SiteHeader() {
 
           {/* Right: icons */}
           <div className="flex flex-1 items-center justify-end gap-0.5">
-            <button
-              className="hidden size-9 items-center justify-center rounded-full transition-colors hover:bg-secondary sm:inline-flex"
-              aria-label="Search"
-            >
-              <Search className="size-5" strokeWidth={1.5} />
-            </button>
+            <form action="/products" className="hidden items-center sm:flex">
+              <label className="sr-only" htmlFor="site-search">Search products</label>
+              <input id="site-search" name="q" placeholder="Search" className="w-0 border-0 bg-transparent text-sm opacity-0 outline-none transition-all focus:w-36 focus:opacity-100" />
+              <button type="submit" className="inline-flex size-9 items-center justify-center rounded-full transition-colors hover:bg-secondary" aria-label="Search products">
+                <Search className="size-5" strokeWidth={1.5} />
+              </button>
+            </form>
             <Link
               href="/login"
               className="hidden size-9 items-center justify-center rounded-full transition-colors hover:bg-secondary sm:inline-flex"
