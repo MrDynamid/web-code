@@ -218,11 +218,13 @@ export async function verifyPayment(params: {
     return { ok: false, error: 'Payment verification failed.' }
   }
 
+  const now = new Date().toISOString()
   await db
     .update(orders)
     .set({
       status: 'paid',
       razorpayPaymentId: params.razorpayPaymentId,
+      statusHistory: [{ status: 'paid', at: now, note: 'Payment received' }],
     })
     .where(and(eq(orders.id, params.orderDbId), eq(orders.userId, userId)))
 

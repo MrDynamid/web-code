@@ -21,6 +21,7 @@ import {
   SelectValue,
 } from '@/components/ui/select'
 import { Card, CardContent } from '@/components/ui/card'
+import { ImageUploader } from '@/components/admin/image-uploader'
 
 type Action = (
   prev: ProductActionState,
@@ -111,18 +112,12 @@ export function ProductForm({
               />
             </div>
 
-            <div className="grid gap-2">
-              <Label htmlFor="images">Image paths</Label>
-              <Input
-                id="images"
-                name="images"
-                defaultValue={product?.images?.join(', ')}
-                placeholder="/products/silk-slip-dress.png"
-              />
-              <p className="text-xs text-muted-foreground">
-                Comma-separated paths. Leave blank to use a placeholder.
-              </p>
-            </div>
+            <ImageUploader
+              name="images"
+              label="Images"
+              defaultValue={product?.images ?? []}
+              hint="First image is the primary. Drag & drop or click to upload · up to 8 MB each"
+            />
           </CardContent>
         </Card>
       </div>

@@ -13,6 +13,7 @@ import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
 import { Switch } from '@/components/ui/switch'
 import { Card, CardContent } from '@/components/ui/card'
+import { ImageUploader } from '@/components/admin/image-uploader'
 
 type Action = (
   prev: BannerActionState,
@@ -76,15 +77,13 @@ export function BannerForm({
               />
             </div>
 
-            <div className="grid gap-2">
-              <Label htmlFor="image">Image path</Label>
-              <Input
-                id="image"
-                name="image"
-                defaultValue={banner?.image ?? ''}
-                placeholder="/editorial/hero.png"
-              />
-            </div>
+            <ImageUploader
+              name="image"
+              label="Banner image"
+              multiple={false}
+              defaultValue={banner?.image ? [banner.image] : []}
+              hint="Recommended 1600×900 · up to 8 MB"
+            />
 
             <div className="grid grid-cols-2 gap-4">
               <div className="grid gap-2">
