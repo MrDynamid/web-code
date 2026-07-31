@@ -313,6 +313,11 @@ async function createOrderTables() {
       ADD COLUMN IF NOT EXISTS coupon_code text
   `)
   await pool.query(`
+    ALTER TABLE IF EXISTS orders
+      ADD COLUMN IF NOT EXISTS status_history jsonb NOT NULL DEFAULT '[]'::jsonb,
+      ADD COLUMN IF NOT EXISTS tracking_number text
+  `)
+  await pool.query(`
     CREATE TABLE IF NOT EXISTS wishlist (
       id serial PRIMARY KEY,
       "userId" text NOT NULL,
@@ -323,6 +328,22 @@ async function createOrderTables() {
   await pool.query(`
     CREATE UNIQUE INDEX IF NOT EXISTS wishlist_user_product_idx
     ON wishlist ("userId", product_id)
+  `)
+  await pool.query(`
+    CREATE TABLE IF NOT EXISTS reviews (
+      id serial PRIMARY KEY,
+      product_id integer NOT NULL,
+      "userId" text NOT NULL,
+      user_name text NOT NULL,
+      rating integer NOT NULL,
+      title text,
+      body text NOT NULL,
+      created_at timestamptz NOT NULL DEFAULT now()
+    )
+  `)
+  await pool.query(`
+    CREATE UNIQUE INDEX IF NOT EXISTS reviews_user_product_idx
+    ON reviews ("userId", product_id)
   `)
 }
 
