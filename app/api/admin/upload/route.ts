@@ -1,57 +1,35 @@
+import { NextResponse } from 'next/server'
 import { put } from '@vercel/blob'
-import { type NextRequest, NextResponse } from 'next/server'
-import { getSession } from '@/lib/admin-auth'
+import { requireAdmin } from '@/lib/admin-auth'
 
+const ALLOWED_TYPES = new Set(['image/jpeg', 'image/png', 'image/webp', 'image/gif'])
 const MAX_BYTES = 8 * 1024 * 1024 // 8 MB
-const ALLOWED = ['image/jpeg', 'image/png', 'image/webp', 'image/avif', 'image/gif']
 
-/**
- * Admin-only image upload to Vercel Blob (public store).
- * Returns the public CDN URL, which is stored directly on products/banners.
- */
-export async function POST(request: NextRequest) {
-  const session = await getSession()
-  if (!session?.user) {
+export async function POST(req: Request): Promise<NextResponse> {
+  try {
+    await requireAdmin()
+  } catch {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
   }
 
-  const allowed = (process.env.ADMIN_EMAILS ?? '')
-    .split(',')
-    .map((email) => email.trim().toLowerCase())
-    .filter(Boolean)
-  if (allowed.length === 0 || !allowed.includes(session.user.email.toLowerCase())) {
-    return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
+  const formData = await req.formData()
+  const file = formData.get('file')
+
+  if (!(file instanceof File)) {
+    return NextResponse.json({ error: 'No file provided.' }, { status: 400 })
+  }
+  if (!ALLOWED_TYPES.has(file.type)) {
+    return NextResponse.json({ error: 'Only JPEG, PNG, WebP and GIF images are accepted.' }, { status: 415 })
+  }
+  if (file.size > MAX_BYTES) {
+    return NextResponse.json({ error: 'File must be 8 MB or smaller.' }, { status: 413 })
   }
 
-  try {
-    const formData = await request.formData()
-    const file = formData.get('file') as File | null
+  const safeName = file.name.replace(/[^a-z0-9._-]/gi, '-').toLowerCase()
+  const blob = await put(`products/${Date.now()}-${safeName}`, file, {
+    access: 'public',
+    addRandomSuffix: true,
+  })
 
-    if (!file) {
-      return NextResponse.json({ error: 'No file provided' }, { status: 400 })
-    }
-    if (!ALLOWED.includes(file.type)) {
-      return NextResponse.json(
-        { error: 'Unsupported file type. Use JPEG, PNG, WebP, AVIF or GIF.' },
-        { status: 400 },
-      )
-    }
-    if (file.size > MAX_BYTES) {
-      return NextResponse.json(
-        { error: 'File too large. Maximum size is 8 MB.' },
-        { status: 400 },
-      )
-    }
-
-    const safeName = file.name.replace(/[^a-zA-Z0-9._-]/g, '-').toLowerCase()
-    const blob = await put(`products/${Date.now()}-${safeName}`, file, {
-      access: 'public',
-      addRandomSuffix: true,
-    })
-
-    return NextResponse.json({ url: blob.url })
-  } catch (error) {
-    console.error('[v0] Upload error:', error)
-    return NextResponse.json({ error: 'Upload failed' }, { status: 500 })
-  }
+  return NextResponse.json({ url: blob.url })
 }

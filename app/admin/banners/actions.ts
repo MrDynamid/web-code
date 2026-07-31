@@ -2,7 +2,7 @@
 
 import { revalidatePath } from 'next/cache'
 import { eq } from 'drizzle-orm'
-import { getSessionUserId } from '@/lib/admin-auth'
+import { requireAdmin } from '@/lib/admin-auth'
 import { db } from '@/lib/db'
 import { banners } from '@/lib/db/schema'
 
@@ -25,7 +25,7 @@ export async function createBanner(
   _prev: BannerActionState,
   formData: FormData,
 ): Promise<BannerActionState> {
-  await getSessionUserId()
+  await requireAdmin()
   const f = fieldsFromForm(formData)
   if (!f.title) return { error: 'Title is required.' }
 
@@ -45,7 +45,7 @@ export async function updateBanner(
   _prev: BannerActionState,
   formData: FormData,
 ): Promise<BannerActionState> {
-  await getSessionUserId()
+  await requireAdmin()
   const f = fieldsFromForm(formData)
   if (!f.title) return { error: 'Title is required.' }
 
@@ -61,14 +61,14 @@ export async function updateBanner(
 }
 
 export async function deleteBanner(id: number): Promise<void> {
-  await getSessionUserId()
+  await requireAdmin()
   await db.delete(banners).where(eq(banners.id, id))
   revalidatePath('/admin/banners')
   revalidatePath('/')
 }
 
 export async function toggleBannerActive(id: number, active: boolean): Promise<void> {
-  await getSessionUserId()
+  await requireAdmin()
   await db.update(banners).set({ active }).where(eq(banners.id, id))
   revalidatePath('/admin/banners')
   revalidatePath('/')

@@ -1,7 +1,7 @@
 'use server'
 
 import crypto from 'crypto'
-import { and, desc, eq, inArray } from 'drizzle-orm'
+import { and, desc, eq, inArray, sql } from 'drizzle-orm'
 import { revalidatePath } from 'next/cache'
 import { db } from '@/lib/db'
 import { orders, products, type OrderItem } from '@/lib/db/schema'
@@ -53,13 +53,8 @@ export async function createOrder(
     return { ok: false, error: 'Your bag is empty.' }
   }
 
-  // Validate quantities.
   for (const line of cart) {
-    if (
-      !Number.isInteger(line.quantity) ||
-      line.quantity < 1 ||
-      line.quantity > 10
-    ) {
+    if (!Number.isInteger(line.quantity) || line.quantity < 1 || line.quantity > 10) {
       return { ok: false, error: 'Invalid quantity in your bag (max 10 per item).' }
     }
   }
@@ -75,6 +70,13 @@ export async function createOrder(
     const product = byId.get(line.id)
     if (!product) {
       return { ok: false, error: 'One of the items is no longer available.' }
+    }
+    // Stock check
+    if (product.stock < line.quantity) {
+      return {
+        ok: false,
+        error: `"${product.name}" only has ${product.stock} in stock. Please adjust your bag.`,
+      }
     }
     subtotal += product.price * line.quantity
     items.push({
@@ -103,7 +105,7 @@ export async function createOrder(
     if (subtotal < coupon.minOrder) {
       return {
         ok: false,
-        error: `Spend at least ${Math.round(coupon.minOrder / 100)} rupees to use this code.`,
+        error: `Spend at least ₹${Math.round(coupon.minOrder / 100)} to use this code.`,
       }
     }
 
@@ -119,7 +121,6 @@ export async function createOrder(
   const shippingCost = subtotal >= FREE_SHIPPING_THRESHOLD ? 0 : SHIPPING_FEE
   const total = Math.max(0, subtotal + shippingCost - discount)
 
-  // Persist the order in a "created" state first so we always have a record.
   const [order] = await db
     .insert(orders)
     .values({
@@ -148,13 +149,11 @@ export async function createOrder(
     contact: shipping.phone ?? '',
   }
 
-  // Hard payment wall: checkout cannot succeed when Razorpay is unavailable.
   if (!razorpayConfigured || !razorpay || !process.env.RAZORPAY_KEY_ID) {
     await db.update(orders).set({ status: 'payment_unavailable' }).where(eq(orders.id, order.id))
     return { ok: false, error: 'Online payments are temporarily unavailable.' }
   }
 
-  // Razorpay expects the amount in the smallest currency unit (paise).
   const rzpOrder = await razorpay.orders.create({
     amount: total * 100,
     currency: 'INR',
@@ -180,8 +179,9 @@ export async function createOrder(
 }
 
 /**
- * Verifies the Razorpay payment signature and marks the order paid. The
- * signature check guarantees the callback genuinely came from Razorpay.
+ * Verifies the Razorpay payment signature and marks the order paid.
+ * The HMAC check runs first — before any DB write — to prevent a
+ * wrong-signature call from marking a legitimate order as failed.
  */
 export async function verifyPayment(params: {
   orderDbId: number
@@ -193,13 +193,29 @@ export async function verifyPayment(params: {
   const secret = process.env.RAZORPAY_KEY_SECRET
   if (!secret) return { ok: false, error: 'Payments are not configured.' }
 
-  const expected = crypto
+  // Verify signature FIRST — before any DB read or write.
+  const expectedHex = crypto
     .createHmac('sha256', secret)
     .update(`${params.razorpayOrderId}|${params.razorpayPaymentId}`)
     .digest('hex')
 
+  const expectedBuf = Buffer.from(expectedHex, 'hex')
+  const actualBuf = Buffer.from(params.razorpaySignature, 'hex')
+
+  const signatureValid =
+    expectedBuf.length === actualBuf.length &&
+    crypto.timingSafeEqual(expectedBuf, actualBuf)
+
+  if (!signatureValid) {
+    return { ok: false, error: 'Payment verification failed.' }
+  }
+
   const [stored] = await db
-    .select({ razorpayOrderId: orders.razorpayOrderId, status: orders.status })
+    .select({
+      razorpayOrderId: orders.razorpayOrderId,
+      status: orders.status,
+      items: orders.items,
+    })
     .from(orders)
     .where(and(eq(orders.id, params.orderDbId), eq(orders.userId, userId)))
     .limit(1)
@@ -210,26 +226,28 @@ export async function verifyPayment(params: {
 
   if (stored.status === 'paid') return { ok: true }
 
-  if (expected !== params.razorpaySignature) {
+  const now = new Date().toISOString()
+
+  // Decrement stock atomically for each ordered item.
+  for (const item of stored.items) {
     await db
-      .update(orders)
-      .set({ status: 'failed' })
-      .where(and(eq(orders.id, params.orderDbId), eq(orders.userId, userId)))
-    return { ok: false, error: 'Payment verification failed.' }
+      .update(products)
+      .set({ stock: sql`GREATEST(stock - ${item.quantity}, 0)` })
+      .where(eq(products.id, item.id))
   }
 
-  const now = new Date().toISOString()
   await db
     .update(orders)
     .set({
       status: 'paid',
       razorpayPaymentId: params.razorpayPaymentId,
-      statusHistory: [{ status: 'paid', at: now, note: 'Payment received' }],
+      statusHistory: [{ status: 'paid', at: now, note: 'Payment received via Razorpay' }],
     })
     .where(and(eq(orders.id, params.orderDbId), eq(orders.userId, userId)))
 
   revalidatePath('/orders')
   revalidatePath('/account')
+  revalidatePath('/products')
   return { ok: true }
 }
 
@@ -241,4 +259,44 @@ export async function getUserOrders() {
     .from(orders)
     .where(eq(orders.userId, session.user.id))
     .orderBy(desc(orders.createdAt))
+}
+
+/**
+ * Cancels the authenticated user's own order if it has not yet shipped.
+ */
+export async function cancelOrder(
+  orderId: number,
+): Promise<{ ok: true } | { ok: false; error: string }> {
+  const userId = await getSessionUserId()
+
+  const [order] = await db
+    .select({ status: orders.status, statusHistory: orders.statusHistory })
+    .from(orders)
+    .where(and(eq(orders.id, orderId), eq(orders.userId, userId)))
+    .limit(1)
+
+  if (!order) return { ok: false, error: 'Order not found.' }
+
+  if (['shipped', 'delivered'].includes(order.status)) {
+    return {
+      ok: false,
+      error: 'This order has already shipped. Please request a return instead.',
+    }
+  }
+  if (order.status === 'cancelled') {
+    return { ok: false, error: 'This order is already cancelled.' }
+  }
+
+  const history = [
+    ...(order.statusHistory ?? []),
+    { status: 'cancelled', at: new Date().toISOString(), note: 'Cancelled by customer' },
+  ]
+
+  await db
+    .update(orders)
+    .set({ status: 'cancelled', statusHistory: history })
+    .where(and(eq(orders.id, orderId), eq(orders.userId, userId)))
+
+  revalidatePath('/orders')
+  return { ok: true }
 }

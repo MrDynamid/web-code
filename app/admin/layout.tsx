@@ -1,4 +1,5 @@
 import type { ReactNode } from 'react'
+import { requireAdmin } from '@/lib/admin-auth'
 import { getSession } from '@/lib/admin-auth'
 import { AdminShell } from '@/components/admin/admin-shell'
 
@@ -9,15 +10,18 @@ export const metadata = {
 export default async function AdminLayout({ children }: { children: ReactNode }) {
   const session = await getSession()
 
-  // Unauthenticated requests (e.g. the sign-in page, which redirects authed
-  // users away) render without the admin chrome. Protected pages additionally
-  // call requireAdmin() to enforce access.
+  // The sign-in page is rendered without chrome (unauthenticated users land here).
+  // All other pages are protected; non-admins are redirected by requireAdmin().
   if (!session?.user) {
     return <>{children}</>
   }
 
+  // Calling requireAdmin() here ensures the admin shell is only ever rendered
+  // for users in ADMIN_EMAILS — no child page can forget to protect itself.
+  const user = await requireAdmin()
+
   return (
-    <AdminShell user={{ name: session.user.name, email: session.user.email }}>
+    <AdminShell user={{ name: user.name ?? user.email, email: user.email }}>
       {children}
     </AdminShell>
   )

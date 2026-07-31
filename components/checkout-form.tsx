@@ -123,10 +123,7 @@ export function CheckoutForm({ userEmail }: { userEmail: string }) {
           })
           if (verified.ok) {
             clear()
-            toast.success('Payment successful', {
-              description: 'Thank you — your order is confirmed.',
-            })
-            router.push('/orders')
+            router.push(`/orders/confirmation?id=${result.orderDbId}`)
           } else {
             toast.error(verified.error)
             setPlacing(false)

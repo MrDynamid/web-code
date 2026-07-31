@@ -1,6 +1,11 @@
+'use client'
+
 import Link from 'next/link'
+import { useState, useTransition } from 'react'
+import { toast } from 'sonner'
 import { Input } from '@/components/ui/input'
 import { Button } from '@/components/ui/button'
+import { subscribeNewsletter } from '@/app/actions/newsletter'
 
 const FOOTER_COLUMNS = [
   {
@@ -17,9 +22,9 @@ const FOOTER_COLUMNS = [
     title: 'Client Care',
     links: [
       { label: 'Track Your Order', href: '/orders' },
-      { label: 'Shipping & Returns', href: '/products' },
-      { label: 'Size Guide', href: '/products' },
-      { label: 'Contact Us', href: '/products' },
+      { label: 'Shipping & Returns', href: '/shipping-returns' },
+      { label: 'Size Guide', href: '/size-guide' },
+      { label: 'Contact Us', href: '/contact' },
     ],
   },
   {
@@ -34,6 +39,25 @@ const FOOTER_COLUMNS = [
 ]
 
 export function SiteFooter() {
+  const [email, setEmail] = useState('')
+  const [pending, startTransition] = useTransition()
+  const [subscribed, setSubscribed] = useState(false)
+
+  function handleSubscribe(e: React.FormEvent) {
+    e.preventDefault()
+    const fd = new FormData()
+    fd.append('email', email)
+    startTransition(async () => {
+      const res = await subscribeNewsletter(null, fd)
+      if (res?.ok) {
+        setSubscribed(true)
+        toast.success('You\'re on the list!')
+      } else if (res?.error) {
+        toast.error(res.error)
+      }
+    })
+  }
+
   return (
     <footer className="mt-20 border-t border-border bg-secondary/40">
       <div className="mx-auto max-w-7xl px-4 py-16 md:px-6">
@@ -41,21 +65,29 @@ export function SiteFooter() {
           <div className="max-w-sm">
             <h2 className="font-serif text-2xl tracking-tight">Maison Lumière</h2>
             <p className="mt-3 text-sm leading-relaxed text-muted-foreground">
-              Considered ready-to-wear crafted from the finest natural fibres.
-              Join our list for early access to new collections and private events.
+              Considered ready-to-wear crafted from the finest natural fibres. Join our list
+              for early access to new collections and private events.
             </p>
-            <form className="mt-5 flex gap-2" aria-label="Newsletter signup">
-              <Input
-                type="email"
-                required
-                placeholder="Email address"
-                aria-label="Email address"
-                className="h-11 rounded-sm bg-background"
-              />
-              <Button type="submit" className="h-11 shrink-0 px-6">
-                Subscribe
-              </Button>
-            </form>
+            {subscribed ? (
+              <p className="mt-5 text-sm font-medium text-gold">
+                Thank you — you&apos;re on the list.
+              </p>
+            ) : (
+              <form onSubmit={handleSubscribe} className="mt-5 flex gap-2" aria-label="Newsletter signup">
+                <Input
+                  type="email"
+                  required
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  placeholder="Email address"
+                  aria-label="Email address"
+                  className="h-11 rounded-sm bg-background"
+                />
+                <Button type="submit" disabled={pending} className="h-11 shrink-0 px-6">
+                  {pending ? '…' : 'Subscribe'}
+                </Button>
+              </form>
+            )}
           </div>
 
           {FOOTER_COLUMNS.map((column) => (
@@ -82,15 +114,9 @@ export function SiteFooter() {
         <div className="mt-14 flex flex-col items-center justify-between gap-4 border-t border-border pt-8 text-xs text-muted-foreground md:flex-row">
           <p>© {new Date().getFullYear()} Maison Lumière. All rights reserved.</p>
           <div className="flex gap-6">
-            <Link href="/" className="transition-colors hover:text-foreground">
-              Privacy Policy
-            </Link>
-            <Link href="/" className="transition-colors hover:text-foreground">
-              Terms of Service
-            </Link>
-            <Link href="/" className="transition-colors hover:text-foreground">
-              Accessibility
-            </Link>
+            <Link href="/" className="transition-colors hover:text-foreground">Privacy Policy</Link>
+            <Link href="/" className="transition-colors hover:text-foreground">Terms of Service</Link>
+            <Link href="/" className="transition-colors hover:text-foreground">Accessibility</Link>
           </div>
         </div>
       </div>
