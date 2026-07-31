@@ -7,6 +7,7 @@ import { getUserOrders } from '@/app/actions/orders'
 import { formatPrice } from '@/lib/product-utils'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
+import { OrderTracker } from '@/components/order-tracker'
 
 export const metadata = { title: 'My orders | Maison Lumière' }
 

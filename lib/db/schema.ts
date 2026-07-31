@@ -149,12 +149,28 @@ export const orders = pgTable('orders', {
   total: integer('total').notNull(),
   currency: text('currency').notNull().default('INR'),
   status: text('status').notNull().default('created'),
+  statusHistory: jsonb('status_history')
+    .$type<{ status: string; at: string; note?: string }[]>()
+    .notNull()
+    .default([]),
+  trackingNumber: text('tracking_number'),
   razorpayOrderId: text('razorpay_order_id'),
   razorpayPaymentId: text('razorpay_payment_id'),
   createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
 })
 
 export type Order = typeof orders.$inferSelect
+
+// Order lifecycle statuses used across the storefront and admin.
+export const ORDER_STATUSES = [
+  'created',
+  'paid',
+  'processing',
+  'shipped',
+  'delivered',
+  'cancelled',
+] as const
+export type OrderStatus = (typeof ORDER_STATUSES)[number]
 
 export const wishlist = pgTable('wishlist', {
   id: serial('id').primaryKey(),
@@ -164,3 +180,16 @@ export const wishlist = pgTable('wishlist', {
 })
 
 export type WishlistRow = typeof wishlist.$inferSelect
+
+export const reviews = pgTable('reviews', {
+  id: serial('id').primaryKey(),
+  productId: integer('product_id').notNull(),
+  userId: text('userId').notNull(),
+  userName: text('user_name').notNull(),
+  rating: integer('rating').notNull(),
+  title: text('title'),
+  body: text('body').notNull(),
+  createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+})
+
+export type Review = typeof reviews.$inferSelect

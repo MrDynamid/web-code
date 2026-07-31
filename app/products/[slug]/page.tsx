@@ -10,8 +10,12 @@ import {
 } from '@/components/ui/accordion'
 import { ProductPurchase } from '@/components/product-purchase'
 import { ProductRail } from '@/components/home/product-rail'
+import { ProductReviews } from '@/components/product-reviews'
+import { RecentlyViewed, RecentlyViewedTracker } from '@/components/recently-viewed'
 import { getProductBySlug, getRelatedProducts } from '@/lib/products'
 import { getWishlistIds } from '@/app/actions/wishlist'
+import { getReviews } from '@/app/actions/reviews'
+import { getSession } from '@/lib/admin-auth'
 
 export async function generateMetadata({
   params,
@@ -36,9 +40,11 @@ export default async function ProductPage({
   const product = await getProductBySlug(slug)
   if (!product) notFound()
 
-  const [related, wishlistIds] = await Promise.all([
+  const [related, wishlistIds, reviews, session] = await Promise.all([
     getRelatedProducts(product, 4),
     getWishlistIds(),
+    getReviews(product.id),
+    getSession(),
   ])
   const wishlisted = new Set(wishlistIds)
 
@@ -113,6 +119,14 @@ export default async function ProductPage({
         </div>
       </div>
 
+      <ProductReviews
+        productId={product.id}
+        reviews={reviews}
+        averageRating={Number(product.rating)}
+        reviewCount={product.reviewCount}
+        isSignedIn={Boolean(session?.user)}
+      />
+
       {related.length > 0 && (
         <div className="mt-8">
           <ProductRail
@@ -124,6 +138,10 @@ export default async function ProductPage({
           />
         </div>
       )}
+
+      <RecentlyViewed excludeId={product.id} />
+
+      <RecentlyViewedTracker productId={product.id} />
     </div>
   )
 }
