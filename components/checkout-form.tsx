@@ -5,6 +5,7 @@ import Image from 'next/image'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { toast } from 'sonner'
+import { Banknote, CreditCard } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
@@ -12,6 +13,7 @@ import { Separator } from '@/components/ui/separator'
 import { lineKey, useCart } from '@/lib/cart-context'
 import { formatPrice } from '@/lib/product-utils'
 import { createOrder, verifyPayment } from '@/app/actions/orders'
+import { cn } from '@/lib/utils'
 
 const FREE_SHIPPING_THRESHOLD = 20000
 const SHIPPING_FEE = 1200
@@ -35,11 +37,22 @@ function loadRazorpay(): Promise<boolean> {
   })
 }
 
-export function CheckoutForm({ userEmail }: { userEmail: string }) {
+type PaymentMethod = 'cod' | 'razorpay'
+
+export function CheckoutForm({
+  userEmail,
+  razorpayReady,
+}: {
+  userEmail: string
+  razorpayReady: boolean
+}) {
   const router = useRouter()
   const { items, subtotal, hydrated, clear } = useCart()
   const [placing, setPlacing] = useState(false)
   const [discountAmount, setDiscountAmount] = useState(0)
+  const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>(
+    razorpayReady ? 'razorpay' : 'cod',
+  )
 
   const shipping = subtotal >= FREE_SHIPPING_THRESHOLD || subtotal === 0 ? 0 : SHIPPING_FEE
   const estimatedTotal = Math.max(0, subtotal + shipping - discountAmount)
@@ -74,7 +87,7 @@ export function CheckoutForm({ userEmail }: { userEmail: string }) {
     }))
 
     try {
-      const result = await createOrder(cart, shippingDetails, couponCode)
+      const result = await createOrder(cart, shippingDetails, couponCode, paymentMethod)
       if (!result.ok) {
         toast.error(result.error)
         setPlacing(false)
@@ -83,7 +96,14 @@ export function CheckoutForm({ userEmail }: { userEmail: string }) {
 
       setDiscountAmount(result.discount)
 
-      // Payment wall: an order is never confirmed without a verified Razorpay payment.
+      // Cash on Delivery — order is confirmed immediately, no payment gateway.
+      if (result.paymentMethod === 'cod') {
+        clear()
+        router.push(`/orders/confirmation?id=${result.orderDbId}`)
+        return
+      }
+
+      // Razorpay — open the payment window.
       if (!result.razorpayOrderId || !result.keyId) {
         toast.error('Online payments are temporarily unavailable. Please try again later.')
         setPlacing(false)
@@ -240,16 +260,59 @@ export function CheckoutForm({ userEmail }: { userEmail: string }) {
             </div>
           </section>
 
-          <section className="space-y-3">
-            <h2 className="font-serif text-2xl tracking-tight">Payment</h2>
-            <p className="text-sm text-muted-foreground">
-              Secure payment powered by Razorpay. You&apos;ll complete your payment — cards, UPI,
-              net banking and wallets — in a secure window after placing your order.
-            </p>
+          <section className="space-y-4">
+            <h2 className="font-serif text-2xl tracking-tight">Payment method</h2>
+            <div className="grid gap-3 sm:grid-cols-2">
+              <button
+                type="button"
+                onClick={() => setPaymentMethod('cod')}
+                className={cn(
+                  'flex items-start gap-3 rounded-sm border p-4 text-left transition-colors',
+                  paymentMethod === 'cod'
+                    ? 'border-primary bg-primary/5'
+                    : 'border-border hover:border-foreground/30',
+                )}
+              >
+                <Banknote className="size-5 shrink-0 text-gold" strokeWidth={1.5} />
+                <div>
+                  <p className="text-sm font-medium">Cash on Delivery</p>
+                  <p className="mt-0.5 text-xs text-muted-foreground">
+                    Pay in cash when your order arrives.
+                  </p>
+                </div>
+              </button>
+
+              <button
+                type="button"
+                onClick={() => setPaymentMethod('razorpay')}
+                disabled={!razorpayReady}
+                className={cn(
+                  'flex items-start gap-3 rounded-sm border p-4 text-left transition-colors disabled:cursor-not-allowed disabled:opacity-50',
+                  paymentMethod === 'razorpay' && razorpayReady
+                    ? 'border-primary bg-primary/5'
+                    : 'border-border hover:border-foreground/30',
+                )}
+              >
+                <CreditCard className="size-5 shrink-0 text-gold" strokeWidth={1.5} />
+                <div>
+                  <p className="text-sm font-medium">
+                    Online payment {razorpayReady ? '' : '(unavailable)'}
+                  </p>
+                  <p className="mt-0.5 text-xs text-muted-foreground">
+                    Cards, UPI, net banking & wallets via Razorpay.
+                  </p>
+                </div>
+              </button>
+            </div>
+            <input type="hidden" name="paymentMethod" value={paymentMethod} />
           </section>
 
           <Button type="submit" disabled={placing || !hydrated} className="h-12 text-sm">
-            {placing ? 'Processing…' : `Pay ${formatPrice(estimatedTotal)}`}
+            {placing
+              ? 'Processing…'
+              : paymentMethod === 'cod'
+                ? `Place order · ${formatPrice(estimatedTotal)}`
+                : `Pay ${formatPrice(estimatedTotal)}`}
           </Button>
         </form>
 

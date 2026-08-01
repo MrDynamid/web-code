@@ -115,6 +115,7 @@ export function ProductForm({
             <ImageUploader
               name="images"
               label="Images"
+              bucket="product-images"
               defaultValue={product?.images ?? []}
               hint="First image is the primary. Drag & drop or click to upload · up to 8 MB each"
             />

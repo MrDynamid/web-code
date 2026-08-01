@@ -23,6 +23,7 @@ export type ShippingDetails = {
 }
 
 type CartLine = { id: number; size: string; color: string; quantity: number }
+type PaymentMethod = 'razorpay' | 'cod'
 
 type CreateOrderResult =
   | {
@@ -31,6 +32,7 @@ type CreateOrderResult =
       amount: number
       discount: number
       currency: string
+      paymentMethod: PaymentMethod
       razorpayOrderId: string | null
       keyId: string | null
       customer: { name: string; email: string; contact: string }
@@ -46,6 +48,7 @@ export async function createOrder(
   cart: CartLine[],
   shipping: ShippingDetails,
   couponCode?: string,
+  paymentMethod: PaymentMethod = 'cod',
 ): Promise<CreateOrderResult> {
   const userId = await getSessionUserId()
 
@@ -71,7 +74,6 @@ export async function createOrder(
     if (!product) {
       return { ok: false, error: 'One of the items is no longer available.' }
     }
-    // Stock check
     if (product.stock < line.quantity) {
       return {
         ok: false,
@@ -149,9 +151,43 @@ export async function createOrder(
     contact: shipping.phone ?? '',
   }
 
+  // Cash on Delivery — mark as confirmed immediately, no payment gateway needed.
+  if (paymentMethod === 'cod') {
+    const now = new Date().toISOString()
+    for (const item of items) {
+      await db
+        .update(products)
+        .set({ stock: sql`GREATEST(stock - ${item.quantity}, 0)` })
+        .where(eq(products.id, item.id))
+    }
+    await db
+      .update(orders)
+      .set({
+        status: 'paid',
+        statusHistory: [{ status: 'paid', at: now, note: 'Cash on Delivery' }],
+      })
+      .where(eq(orders.id, order.id))
+
+    revalidatePath('/orders')
+    revalidatePath('/account')
+    revalidatePath('/products')
+
+    return {
+      ok: true,
+      orderDbId: order.id,
+      amount: total,
+      discount,
+      currency: 'INR',
+      paymentMethod: 'cod',
+      razorpayOrderId: null,
+      keyId: null,
+      customer,
+    }
+  }
+
+  // Razorpay online payment
   if (!razorpayConfigured || !razorpay || !process.env.RAZORPAY_KEY_ID) {
-    await db.update(orders).set({ status: 'payment_unavailable' }).where(eq(orders.id, order.id))
-    return { ok: false, error: 'Online payments are temporarily unavailable.' }
+    return { ok: false, error: 'Online payments are not configured. Please choose Cash on Delivery.' }
   }
 
   const rzpOrder = await razorpay.orders.create({
@@ -172,6 +208,7 @@ export async function createOrder(
     amount: total,
     discount,
     currency: 'INR',
+    paymentMethod: 'razorpay',
     razorpayOrderId: rzpOrder.id,
     keyId: process.env.RAZORPAY_KEY_ID ?? null,
     customer,
@@ -180,8 +217,6 @@ export async function createOrder(
 
 /**
  * Verifies the Razorpay payment signature and marks the order paid.
- * The HMAC check runs first — before any DB write — to prevent a
- * wrong-signature call from marking a legitimate order as failed.
  */
 export async function verifyPayment(params: {
   orderDbId: number
@@ -193,7 +228,6 @@ export async function verifyPayment(params: {
   const secret = process.env.RAZORPAY_KEY_SECRET
   if (!secret) return { ok: false, error: 'Payments are not configured.' }
 
-  // Verify signature FIRST — before any DB read or write.
   const expectedHex = crypto
     .createHmac('sha256', secret)
     .update(`${params.razorpayOrderId}|${params.razorpayPaymentId}`)
@@ -228,7 +262,6 @@ export async function verifyPayment(params: {
 
   const now = new Date().toISOString()
 
-  // Decrement stock atomically for each ordered item.
   for (const item of stored.items) {
     await db
       .update(products)

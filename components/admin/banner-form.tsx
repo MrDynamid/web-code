@@ -81,6 +81,7 @@ export function BannerForm({
               name="image"
               label="Banner image"
               multiple={false}
+              bucket="banner-images"
               defaultValue={banner?.image ? [banner.image] : []}
               hint="Recommended 1600×900 · up to 8 MB"
             />

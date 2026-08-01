@@ -7,9 +7,10 @@ import { ImagePlus, Loader2, X, Star } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { Button } from '@/components/ui/button'
 
-async function uploadFile(file: File): Promise<string> {
+async function uploadFile(file: File, bucket: string): Promise<string> {
   const body = new FormData()
   body.append('file', file)
+  body.append('bucket', bucket)
   const res = await fetch('/api/admin/upload', { method: 'POST', body })
   const data = await res.json()
   if (!res.ok) throw new Error(data.error ?? 'Upload failed')
@@ -27,12 +28,14 @@ export function ImageUploader({
   multiple = true,
   label = 'Images',
   hint,
+  bucket = 'product-images',
 }: {
   name: string
   defaultValue?: string[]
   multiple?: boolean
   label?: string
   hint?: string
+  bucket?: string
 }) {
   const [urls, setUrls] = useState<string[]>(defaultValue.filter(Boolean))
   const [uploading, setUploading] = useState(false)
@@ -47,7 +50,7 @@ export function ImageUploader({
       try {
         const uploaded: string[] = []
         for (const file of files) {
-          uploaded.push(await uploadFile(file))
+          uploaded.push(await uploadFile(file, bucket))
         }
         setUrls((prev) => (multiple ? [...prev, ...uploaded] : uploaded.slice(-1)))
         toast.success(
