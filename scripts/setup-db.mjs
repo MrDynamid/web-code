@@ -337,11 +337,7 @@ async function createOrderTables() {
       created_at timestamptz NOT NULL DEFAULT now()
     )
   `)
-<<<<<<< HEAD
   // idempotent: ensure columns added in later migrations exist on older databases
-=======
-  -- idempotent: ensure columns added in later migrations exist on older databases
->>>>>>> b40138d1871002c6187013e20ed0edbe04d957d4
   await pool.query(`
     ALTER TABLE IF EXISTS orders
       ADD COLUMN IF NOT EXISTS discount integer NOT NULL DEFAULT 0,

@@ -8,7 +8,6 @@ const globalForDb = globalThis as unknown as {
 }
 
 function resolveConnectionString(): string | null {
-<<<<<<< HEAD
   // Prefer the Supabase-integration-managed connection strings, which always
   // point at the currently connected project. DATABASE_URL / SUPABASE_DB_URL
   // are kept only as manual fallbacks (they can go stale if the project that
@@ -33,13 +32,6 @@ function resolveConnectionString(): string | null {
   } catch {
     return raw.replace(/([?&])sslmode=[^&]*/g, '$1').replace(/[?&]$/, '')
   }
-=======
-  return (
-    process.env.DATABASE_URL ??
-    process.env.SUPABASE_DB_URL ??
-    null
-  )
->>>>>>> b40138d1871002c6187013e20ed0edbe04d957d4
 }
 
 /**
@@ -59,11 +51,7 @@ function getPool(): Pool {
 
   const p = new Pool({
     connectionString,
-<<<<<<< HEAD
     ssl: /supabase|pooler|amazonaws|neon/.test(connectionString)
-=======
-    ssl: connectionString.includes('supabase.co')
->>>>>>> b40138d1871002c6187013e20ed0edbe04d957d4
       ? { rejectUnauthorized: false }
       : false,
     max: 10,
@@ -103,7 +91,6 @@ export const pool = new Proxy({} as Pool, {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     return (real as any)[prop]
   },
-<<<<<<< HEAD
   // Better Auth detects the database dialect using the `in` operator
   // (e.g. `"connect" in db` -> Postgres). Without a `has` trap those checks
   // run against the empty proxy target and always return false, causing
@@ -111,6 +98,4 @@ export const pool = new Proxy({} as Pool, {
   has(_target, prop) {
     return Reflect.has(getPool(), prop)
   },
-=======
->>>>>>> b40138d1871002c6187013e20ed0edbe04d957d4
 })
