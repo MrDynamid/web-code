@@ -4,6 +4,7 @@ import { CartProvider } from '@/lib/cart-context'
 import { SiteHeader } from '@/components/site-header'
 import { SiteFooter } from '@/components/site-footer'
 import { Toaster } from '@/components/ui/sonner'
+import { SpeedInsights } from '@vercel/speed-insights/next'
 import './globals.css'
 
 const jost = Jost({
@@ -58,6 +59,7 @@ export default function RootLayout({
           </div>
         </CartProvider>
         <Toaster position="top-center" />
+        <SpeedInsights />
       </body>
     </html>
   )
