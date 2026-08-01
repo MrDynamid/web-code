@@ -2,7 +2,7 @@
 
 import { revalidatePath } from 'next/cache'
 import { eq } from 'drizzle-orm'
-import { getSessionUserId } from '@/lib/admin-auth'
+import { requireAdmin } from '@/lib/admin-auth'
 import { db } from '@/lib/db'
 import { coupons } from '@/lib/db/schema'
 
@@ -32,7 +32,7 @@ export async function createCoupon(
   _prev: CouponActionState,
   formData: FormData,
 ): Promise<CouponActionState> {
-  await getSessionUserId()
+  await requireAdmin()
   const f = fieldsFromForm(formData)
 
   if (!f.code) return { error: 'Code is required.' }
@@ -57,7 +57,7 @@ export async function updateCoupon(
   _prev: CouponActionState,
   formData: FormData,
 ): Promise<CouponActionState> {
-  await getSessionUserId()
+  await requireAdmin()
   const f = fieldsFromForm(formData)
 
   if (!f.code) return { error: 'Code is required.' }
@@ -78,14 +78,14 @@ export async function updateCoupon(
 }
 
 export async function deleteCoupon(id: number): Promise<void> {
-  await getSessionUserId()
+  await requireAdmin()
   await db.delete(coupons).where(eq(coupons.id, id))
   revalidatePath('/admin/coupons')
   revalidatePath('/admin')
 }
 
 export async function toggleCouponActive(id: number, active: boolean): Promise<void> {
-  await getSessionUserId()
+  await requireAdmin()
   await db.update(coupons).set({ active }).where(eq(coupons.id, id))
   revalidatePath('/admin/coupons')
   revalidatePath('/admin')

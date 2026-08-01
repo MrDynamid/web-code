@@ -1,5 +1,6 @@
+export const dynamic = 'force-dynamic'
+
 import type { Metadata } from 'next'
-import Image from 'next/image'
 import Link from 'next/link'
 import { notFound } from 'next/navigation'
 import {
@@ -9,6 +10,7 @@ import {
   AccordionTrigger,
 } from '@/components/ui/accordion'
 import { ProductPurchase } from '@/components/product-purchase'
+import { ProductGallery } from '@/components/product-gallery'
 import { ProductRail } from '@/components/home/product-rail'
 import { ProductReviews } from '@/components/product-reviews'
 import { RecentlyViewed, RecentlyViewedTracker } from '@/components/recently-viewed'
@@ -66,22 +68,8 @@ export default async function ProductPage({
       </nav>
 
       <div className="grid gap-10 lg:grid-cols-2 lg:gap-16">
-        <div className="grid gap-4">
-          <div className="relative aspect-3/4 overflow-hidden rounded-sm bg-muted">
-            <Image
-              src={product.images[0] || '/placeholder.svg'}
-              alt={product.name}
-              fill
-              priority
-              sizes="(min-width: 1024px) 50vw, 100vw"
-              className="object-cover"
-            />
-            {product.badge && (
-              <span className="absolute top-4 left-4 rounded-full bg-gold px-3 py-1 text-[10px] font-medium tracking-[0.12em] text-gold-foreground uppercase">
-                {product.badge}
-              </span>
-            )}
-          </div>
+        <div>
+          <ProductGallery images={product.images} name={product.name} badge={product.badge} />
         </div>
 
         <div className="lg:py-4">

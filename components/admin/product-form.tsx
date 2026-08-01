@@ -4,7 +4,7 @@ import { useActionState, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { toast } from 'sonner'
-import { Loader2 } from 'lucide-react'
+import { Loader as Loader2 } from 'lucide-react'
 import type { Product } from '@/lib/db/schema'
 import { CATEGORIES } from '@/lib/product-utils'
 import type { ProductActionState } from '@/app/admin/products/actions'
@@ -115,6 +115,7 @@ export function ProductForm({
             <ImageUploader
               name="images"
               label="Images"
+              bucket="product-images"
               defaultValue={product?.images ?? []}
               hint="First image is the primary. Drag & drop or click to upload · up to 8 MB each"
             />

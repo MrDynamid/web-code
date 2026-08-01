@@ -4,7 +4,7 @@ import { useActionState, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { toast } from 'sonner'
-import { Loader2 } from 'lucide-react'
+import { Loader as Loader2 } from 'lucide-react'
 import type { Banner } from '@/lib/db/schema'
 import type { BannerActionState } from '@/app/admin/banners/actions'
 import { Button } from '@/components/ui/button'
@@ -81,6 +81,7 @@ export function BannerForm({
               name="image"
               label="Banner image"
               multiple={false}
+              bucket="banner-images"
               defaultValue={banner?.image ? [banner.image] : []}
               hint="Recommended 1600×900 · up to 8 MB"
             />

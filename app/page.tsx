@@ -1,3 +1,5 @@
+export const dynamic = 'force-dynamic'
+
 import { Hero } from '@/components/home/hero'
 import { CategoryGrid } from '@/components/home/category-grid'
 import { ProductRail } from '@/components/home/product-rail'

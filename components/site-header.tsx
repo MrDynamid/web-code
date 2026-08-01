@@ -2,7 +2,7 @@
 
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
-import { Heart, Menu, Search, User } from 'lucide-react'
+import { Heart, Menu, Search, User, LogIn } from 'lucide-react'
 import { useState } from 'react'
 import {
   Sheet,
@@ -13,6 +13,7 @@ import {
 } from '@/components/ui/sheet'
 import { CartDrawer } from '@/components/cart-drawer'
 import { cn } from '@/lib/utils'
+import { authClient } from '@/lib/auth-client'
 
 const NAV_LINKS = [
   { label: 'New Arrivals', href: '/products?sort=newest' },
@@ -26,12 +27,14 @@ const NAV_LINKS = [
 export function SiteHeader() {
   const [menuOpen, setMenuOpen] = useState(false)
   const pathname = usePathname()
+  const { data: session } = authClient.useSession()
+  const accountHref = session?.user ? '/account' : '/login'
 
   return (
     <header className="sticky top-0 z-50 bg-background/90 backdrop-blur-md">
       <div className="bg-primary text-primary-foreground">
         <p className="mx-auto max-w-7xl px-4 py-2 text-center text-xs tracking-[0.15em] uppercase">
-          Complimentary shipping on orders over ₹15,000
+          Complimentary shipping on orders over ₹20,000
         </p>
       </div>
 
@@ -63,14 +66,14 @@ export function SiteHeader() {
                   ))}
                 </nav>
                 <div className="mt-2 flex flex-col gap-1 border-t px-2 py-4 text-sm">
-                  <Link href="/login" onClick={() => setMenuOpen(false)} className="rounded-sm px-4 py-2.5 transition-colors hover:bg-secondary">
-                    Sign in
+                  <Link href={accountHref} onClick={() => setMenuOpen(false)} className="rounded-sm px-4 py-2.5 transition-colors hover:bg-secondary">
+                    {session?.user ? 'My account' : 'Sign in'}
                   </Link>
                   <Link href="/wishlist" onClick={() => setMenuOpen(false)} className="rounded-sm px-4 py-2.5 transition-colors hover:bg-secondary">
                     Wishlist
                   </Link>
                   <Link href="/orders" onClick={() => setMenuOpen(false)} className="rounded-sm px-4 py-2.5 transition-colors hover:bg-secondary">
-                    Track order
+                    My orders
                   </Link>
                 </div>
               </SheetContent>
@@ -78,7 +81,9 @@ export function SiteHeader() {
 
             <nav className="hidden items-center gap-6 lg:flex">
               {NAV_LINKS.slice(0, 5).map((link) => {
-                const active = pathname === '/products' && link.href.includes(pathname)
+                const active = pathname.startsWith('/products') && link.href.includes('category')
+                  ? pathname === '/products' && link.href === '/products'
+                  : false
                 return (
                   <Link
                     key={link.href}
@@ -119,11 +124,15 @@ export function SiteHeader() {
               </button>
             </form>
             <Link
-              href="/login"
+              href={accountHref}
               className="hidden size-9 items-center justify-center rounded-full transition-colors hover:bg-secondary sm:inline-flex"
-              aria-label="Account"
+              aria-label={session?.user ? 'My account' : 'Sign in'}
             >
-              <User className="size-5" strokeWidth={1.5} />
+              {session?.user ? (
+                <User className="size-5" strokeWidth={1.5} />
+              ) : (
+                <LogIn className="size-5" strokeWidth={1.5} />
+              )}
             </Link>
             <Link
               href="/wishlist"

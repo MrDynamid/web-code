@@ -2,7 +2,7 @@
 
 import { revalidatePath } from 'next/cache'
 import { eq } from 'drizzle-orm'
-import { getSessionUserId } from '@/lib/admin-auth'
+import { requireAdmin } from '@/lib/admin-auth'
 import { db } from '@/lib/db'
 import { products } from '@/lib/db/schema'
 
@@ -26,9 +26,9 @@ function parseList(value: FormDataEntryValue | null): string[] {
 
 function toCents(value: FormDataEntryValue | null): number | null {
   if (value === null || String(value).trim() === '') return null
-  const dollars = Number(String(value).replace(/[^0-9.]/g, ''))
-  if (!Number.isFinite(dollars)) return null
-  return Math.round(dollars * 100)
+  const num = Number(String(value).replace(/[^0-9.]/g, ''))
+  if (!Number.isFinite(num)) return null
+  return Math.round(num * 100)
 }
 
 function fieldsFromForm(formData: FormData) {
@@ -63,7 +63,7 @@ export async function createProduct(
   _prev: ProductActionState,
   formData: FormData,
 ): Promise<ProductActionState> {
-  await getSessionUserId()
+  await requireAdmin()
   const f = fieldsFromForm(formData)
 
   if (!f.name) return { error: 'Name is required.' }
@@ -107,7 +107,7 @@ export async function updateProduct(
   _prev: ProductActionState,
   formData: FormData,
 ): Promise<ProductActionState> {
-  await getSessionUserId()
+  await requireAdmin()
   const f = fieldsFromForm(formData)
 
   if (!f.name) return { error: 'Name is required.' }
@@ -151,7 +151,7 @@ export async function updateProduct(
 }
 
 export async function deleteProduct(id: number): Promise<void> {
-  await getSessionUserId()
+  await requireAdmin()
   await db.delete(products).where(eq(products.id, id))
   revalidatePath('/admin/products')
   revalidatePath('/')

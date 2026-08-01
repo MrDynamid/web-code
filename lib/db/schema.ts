@@ -193,3 +193,12 @@ export const reviews = pgTable('reviews', {
 })
 
 export type Review = typeof reviews.$inferSelect
+
+export const newsletterSubscribers = pgTable('newsletter_subscribers', {
+  id: serial('id').primaryKey(),
+  email: text('email').notNull().unique(),
+  active: boolean('active').notNull().default(true),
+  createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+})
+
+export type NewsletterSubscriber = typeof newsletterSubscribers.$inferSelect

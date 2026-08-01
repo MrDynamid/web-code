@@ -1,7 +1,30 @@
 import pg from 'pg'
 const { Pool } = pg
 
-const pool = new Pool({ connectionString: process.env.DATABASE_URL })
+function resolveConnectionString() {
+  const raw =
+    process.env.POSTGRES_URL ??
+    process.env.POSTGRES_URL_NON_POOLING ??
+    process.env.DATABASE_URL ??
+    process.env.SUPABASE_DB_URL
+  if (!raw) throw new Error('No database connection string found in environment.')
+  try {
+    const url = new URL(raw)
+    url.searchParams.delete('sslmode')
+    url.searchParams.delete('supa')
+    return url.toString()
+  } catch {
+    return raw
+  }
+}
+
+const connectionString = resolveConnectionString()
+const pool = new Pool({
+  connectionString,
+  ssl: /supabase|pooler|amazonaws|neon/.test(connectionString)
+    ? { rejectUnauthorized: false }
+    : false,
+})
 
 // ---------------------------------------------------------------------------
 // Product catalogue
@@ -284,6 +307,11 @@ async function createOrderTables() {
     ON CONFLICT (code) DO NOTHING
   `)
   await pool.query(`
+    INSERT INTO coupons (code, label, type, value, min_order, active)
+    VALUES ('SAVE500', 'Flat \u20b9500 off', 'fixed', 500, 5000, true)
+    ON CONFLICT (code) DO NOTHING
+  `)
+  await pool.query(`
     CREATE TABLE IF NOT EXISTS orders (
       id serial PRIMARY KEY,
       "userId" text NOT NULL,
@@ -302,18 +330,18 @@ async function createOrderTables() {
       total integer NOT NULL,
       currency text NOT NULL DEFAULT 'INR',
       status text NOT NULL DEFAULT 'created',
+      status_history jsonb NOT NULL DEFAULT '[]'::jsonb,
+      tracking_number text,
       razorpay_order_id text,
       razorpay_payment_id text,
       created_at timestamptz NOT NULL DEFAULT now()
     )
   `)
+  // idempotent: ensure columns added in later migrations exist on older databases
   await pool.query(`
     ALTER TABLE IF EXISTS orders
       ADD COLUMN IF NOT EXISTS discount integer NOT NULL DEFAULT 0,
-      ADD COLUMN IF NOT EXISTS coupon_code text
-  `)
-  await pool.query(`
-    ALTER TABLE IF EXISTS orders
+      ADD COLUMN IF NOT EXISTS coupon_code text,
       ADD COLUMN IF NOT EXISTS status_history jsonb NOT NULL DEFAULT '[]'::jsonb,
       ADD COLUMN IF NOT EXISTS tracking_number text
   `)

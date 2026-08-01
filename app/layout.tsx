@@ -1,4 +1,3 @@
-import { Analytics } from '@vercel/analytics/next'
 import type { Metadata, Viewport } from 'next'
 import { Cormorant_Garamond, Jost } from 'next/font/google'
 import { CartProvider } from '@/lib/cart-context'
@@ -59,7 +58,6 @@ export default function RootLayout({
           </div>
         </CartProvider>
         <Toaster position="top-center" />
-        {process.env.NODE_ENV === 'production' && <Analytics />}
       </body>
     </html>
   )
