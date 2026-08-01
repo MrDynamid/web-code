@@ -1,3 +1,5 @@
+export const dynamic = 'force-dynamic'
+
 import { redirect } from 'next/navigation'
 import { getSession } from '@/lib/admin-auth'
 import { CheckoutForm } from '@/components/checkout-form'

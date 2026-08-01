@@ -1,3 +1,5 @@
+export const dynamic = 'force-dynamic'
+
 import Link from 'next/link'
 import { ArrowUpRight, Images, Package, ShoppingBag, Star, Tags, TrendingUp } from 'lucide-react'
 import { desc } from 'drizzle-orm'

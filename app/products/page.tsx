@@ -1,3 +1,5 @@
+export const dynamic = 'force-dynamic'
+
 import type { Metadata } from 'next'
 import { ProductCard } from '@/components/product-card'
 import { ProductFilters } from '@/components/product-filters'

@@ -1,3 +1,5 @@
+export const dynamic = 'force-dynamic'
+
 import Link from 'next/link'
 import { Pencil, Plus } from 'lucide-react'
 import { requireAdmin } from '@/lib/admin-auth'
