@@ -12,14 +12,14 @@ const FOOTER_COLUMNS = [
     title: 'Shop',
     links: [
       { label: 'New Arrivals', href: '/products?sort=newest' },
-      { label: 'Dresses', href: '/products?category=Dresses' },
-      { label: 'Outerwear', href: '/products?category=Outerwear' },
-      { label: 'Knitwear', href: '/products?category=Knitwear' },
-      { label: 'Accessories', href: '/products?category=Accessories' },
+      { label: 'Electronics', href: '/products?category=Electronics' },
+      { label: 'Fashion', href: '/products?category=Fashion' },
+      { label: 'Home & Kitchen', href: '/products?category=Home+%26+Kitchen' },
+      { label: 'Beauty', href: '/products?category=Beauty' },
     ],
   },
   {
-    title: 'Client Care',
+    title: 'Customer Service',
     links: [
       { label: 'Track Your Order', href: '/orders' },
       { label: 'Shipping & Returns', href: '/shipping-returns' },
@@ -28,12 +28,11 @@ const FOOTER_COLUMNS = [
     ],
   },
   {
-    title: 'The House',
+    title: 'About',
     links: [
-      { label: 'Our Story', href: '/about#story' },
-      { label: 'Sustainability', href: '/about#sustainability' },
-      { label: 'Journal', href: '/about#journal' },
+      { label: 'Our Story', href: '/about' },
       { label: 'Careers', href: '/about#careers' },
+      { label: 'Legal', href: '/legal' },
     ],
   },
 ]
@@ -63,10 +62,10 @@ export function SiteFooter() {
       <div className="mx-auto max-w-7xl px-4 py-16 md:px-6">
         <div className="grid gap-12 lg:grid-cols-[1.4fr_1fr_1fr_1fr]">
           <div className="max-w-sm">
-            <h2 className="font-serif text-2xl tracking-tight">Maison Lumière</h2>
+            <h2 className="font-serif text-2xl font-bold tracking-tight">ShopEase</h2>
             <p className="mt-3 text-sm leading-relaxed text-muted-foreground">
-              Considered ready-to-wear crafted from the finest natural fibres. Join our list
-              for early access to new collections and private events.
+              Your one-stop marketplace for electronics, fashion, home essentials and more.
+              Get the best deals delivered fast to your doorstep.
             </p>
             {subscribed ? (
               <p className="mt-5 text-sm font-medium text-gold">
@@ -112,7 +111,7 @@ export function SiteFooter() {
         </div>
 
         <div className="mt-14 flex flex-col items-center justify-between gap-4 border-t border-border pt-8 text-xs text-muted-foreground md:flex-row">
-          <p>© {new Date().getFullYear()} Maison Lumière. All rights reserved.</p>
+          <p>© {new Date().getFullYear()} ShopEase. All rights reserved.</p>
           <div className="flex flex-wrap justify-center gap-6">
             <Link href="/legal#privacy" className="transition-all duration-200 hover:text-foreground">Privacy Policy</Link>
             <Link href="/legal#terms" className="transition-all duration-200 hover:text-foreground">Terms of Service</Link>

@@ -4,7 +4,7 @@ import { getSession } from '@/lib/admin-auth'
 import { AdminAuthForm } from '@/components/admin/admin-auth-form'
 
 export const metadata = {
-  title: 'Admin sign in · Maison Lumière',
+  title: 'Admin Sign In | ShopEase',
 }
 
 export default async function AdminSignInPage() {

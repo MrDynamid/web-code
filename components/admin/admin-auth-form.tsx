@@ -43,8 +43,8 @@ export function AdminAuthForm() {
   return (
     <div className="w-full max-w-sm animate-in fade-in slide-in-from-bottom-4 duration-500">
       <div className="mb-8 text-center">
-        <p className="text-[11px] tracking-[0.3em] text-muted-foreground uppercase">
-          Maison Lumière
+        <p className="font-serif text-xl font-bold tracking-tight text-foreground">
+          ShopEase
         </p>
         <h1 className="mt-3 font-serif text-3xl tracking-tight">
           {mode === 'sign-in' ? 'Admin sign in' : 'Create admin account'}
@@ -79,7 +79,7 @@ export function AdminAuthForm() {
             onChange={(e) => setEmail(e.target.value)}
             required
             autoComplete="email"
-            placeholder="admin@maisonlumiere.com"
+            placeholder="admin@shopease.com"
           />
         </div>
         <div className="space-y-2">
