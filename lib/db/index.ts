@@ -91,4 +91,11 @@ export const pool = new Proxy({} as Pool, {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     return (real as any)[prop]
   },
+  // Better Auth detects the database dialect using the `in` operator
+  // (e.g. `"connect" in db` -> Postgres). Without a `has` trap those checks
+  // run against the empty proxy target and always return false, causing
+  // "Failed to initialize database adapter". Delegate to the real pool.
+  has(_target, prop) {
+    return Reflect.has(getPool(), prop)
+  },
 })
