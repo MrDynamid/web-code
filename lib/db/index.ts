@@ -8,11 +8,30 @@ const globalForDb = globalThis as unknown as {
 }
 
 function resolveConnectionString(): string | null {
-  return (
+  // Prefer the Supabase-integration-managed connection strings, which always
+  // point at the currently connected project. DATABASE_URL / SUPABASE_DB_URL
+  // are kept only as manual fallbacks (they can go stale if the project that
+  // originally set them is deleted).
+  const raw =
+    process.env.POSTGRES_URL ??
+    process.env.POSTGRES_URL_NON_POOLING ??
     process.env.DATABASE_URL ??
     process.env.SUPABASE_DB_URL ??
     null
-  )
+
+  if (!raw) return null
+
+  // Strip any `sslmode` query param. Newer pg / pg-connection-string versions
+  // treat sslmode=require as verify-full, which rejects Supabase's certificate
+  // chain. We handle TLS explicitly via the `ssl` pool option below instead.
+  try {
+    const url = new URL(raw)
+    url.searchParams.delete('sslmode')
+    url.searchParams.delete('supa')
+    return url.toString()
+  } catch {
+    return raw.replace(/([?&])sslmode=[^&]*/g, '$1').replace(/[?&]$/, '')
+  }
 }
 
 /**
@@ -32,7 +51,7 @@ function getPool(): Pool {
 
   const p = new Pool({
     connectionString,
-    ssl: connectionString.includes('supabase.co')
+    ssl: /supabase|pooler|amazonaws|neon/.test(connectionString)
       ? { rejectUnauthorized: false }
       : false,
     max: 10,

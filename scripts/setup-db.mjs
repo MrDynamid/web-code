@@ -1,7 +1,30 @@
 import pg from 'pg'
 const { Pool } = pg
 
-const pool = new Pool({ connectionString: process.env.DATABASE_URL })
+function resolveConnectionString() {
+  const raw =
+    process.env.POSTGRES_URL ??
+    process.env.POSTGRES_URL_NON_POOLING ??
+    process.env.DATABASE_URL ??
+    process.env.SUPABASE_DB_URL
+  if (!raw) throw new Error('No database connection string found in environment.')
+  try {
+    const url = new URL(raw)
+    url.searchParams.delete('sslmode')
+    url.searchParams.delete('supa')
+    return url.toString()
+  } catch {
+    return raw
+  }
+}
+
+const connectionString = resolveConnectionString()
+const pool = new Pool({
+  connectionString,
+  ssl: /supabase|pooler|amazonaws|neon/.test(connectionString)
+    ? { rejectUnauthorized: false }
+    : false,
+})
 
 // ---------------------------------------------------------------------------
 // Product catalogue
@@ -314,7 +337,7 @@ async function createOrderTables() {
       created_at timestamptz NOT NULL DEFAULT now()
     )
   `)
-  -- idempotent: ensure columns added in later migrations exist on older databases
+  // idempotent: ensure columns added in later migrations exist on older databases
   await pool.query(`
     ALTER TABLE IF EXISTS orders
       ADD COLUMN IF NOT EXISTS discount integer NOT NULL DEFAULT 0,

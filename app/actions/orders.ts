@@ -216,6 +216,44 @@ export async function createOrder(
 }
 
 /**
+ * Validates a promo code against a subtotal and returns the discount it would
+ * apply, without creating an order. Used to preview savings at checkout. The
+ * same rules are re-enforced server-side in createOrder, so this is safe to
+ * expose — it only computes a number, it never grants anything.
+ */
+export async function previewCoupon(
+  code: string,
+  subtotal: number,
+): Promise<
+  | { ok: true; code: string; label: string; discount: number }
+  | { ok: false; error: string }
+> {
+  const normalized = String(code ?? '').trim().toUpperCase()
+  if (!normalized) return { ok: false, error: 'Enter a promotion code.' }
+  if (!Number.isFinite(subtotal) || subtotal <= 0) {
+    return { ok: false, error: 'Add items to your bag first.' }
+  }
+
+  const coupon = await getActiveCouponByCode(normalized)
+  if (!coupon) {
+    return { ok: false, error: 'That code is invalid or no longer active.' }
+  }
+  if (subtotal < coupon.minOrder) {
+    return {
+      ok: false,
+      error: `Spend at least ₹${Math.round(coupon.minOrder / 100)} to use this code.`,
+    }
+  }
+
+  const discount =
+    coupon.type === 'percentage'
+      ? Math.floor((subtotal * coupon.value) / 100)
+      : Math.min(coupon.value, subtotal)
+
+  return { ok: true, code: coupon.code, label: coupon.label, discount }
+}
+
+/**
  * Verifies the Razorpay payment signature and marks the order paid.
  */
 export async function verifyPayment(params: {

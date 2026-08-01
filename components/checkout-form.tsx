@@ -5,14 +5,14 @@ import Image from 'next/image'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { toast } from 'sonner'
-import { Banknote, CreditCard } from 'lucide-react'
+import { Banknote, CreditCard, Tag, Truck } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Separator } from '@/components/ui/separator'
 import { lineKey, useCart } from '@/lib/cart-context'
 import { formatPrice } from '@/lib/product-utils'
-import { createOrder, verifyPayment } from '@/app/actions/orders'
+import { createOrder, verifyPayment, previewCoupon } from '@/app/actions/orders'
 import { cn } from '@/lib/utils'
 
 const FREE_SHIPPING_THRESHOLD = 20000
@@ -50,16 +50,67 @@ export function CheckoutForm({
   const { items, subtotal, hydrated, clear } = useCart()
   const [placing, setPlacing] = useState(false)
   const [discountAmount, setDiscountAmount] = useState(0)
+  const [couponInput, setCouponInput] = useState('')
+  const [appliedCoupon, setAppliedCoupon] = useState<string | null>(null)
+  const [couponPending, setCouponPending] = useState(false)
+  const [couponError, setCouponError] = useState<string | null>(null)
   const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>(
     razorpayReady ? 'razorpay' : 'cod',
   )
 
   const shipping = subtotal >= FREE_SHIPPING_THRESHOLD || subtotal === 0 ? 0 : SHIPPING_FEE
   const estimatedTotal = Math.max(0, subtotal + shipping - discountAmount)
+  const remainingForFreeShipping = Math.max(0, FREE_SHIPPING_THRESHOLD - subtotal)
+  const freeShippingProgress = Math.min(100, Math.round((subtotal / FREE_SHIPPING_THRESHOLD) * 100))
 
   useEffect(() => {
     void loadRazorpay()
   }, [])
+
+  // Re-validate the applied coupon whenever the subtotal changes so the preview
+  // never drifts from what the server will actually charge.
+  useEffect(() => {
+    if (!appliedCoupon) return
+    let cancelled = false
+    previewCoupon(appliedCoupon, subtotal).then((res) => {
+      if (cancelled) return
+      if (res.ok) {
+        setDiscountAmount(res.discount)
+      } else {
+        setAppliedCoupon(null)
+        setDiscountAmount(0)
+        setCouponError(res.error)
+      }
+    })
+    return () => {
+      cancelled = true
+    }
+  }, [subtotal, appliedCoupon])
+
+  async function handleApplyCoupon() {
+    const code = couponInput.trim()
+    if (!code) return
+    setCouponPending(true)
+    setCouponError(null)
+    const res = await previewCoupon(code, subtotal)
+    if (res.ok) {
+      setAppliedCoupon(res.code)
+      setDiscountAmount(res.discount)
+      toast.success(`Code ${res.code} applied — you saved ${formatPrice(res.discount)}.`)
+    } else {
+      setAppliedCoupon(null)
+      setDiscountAmount(0)
+      setCouponError(res.error)
+    }
+    setCouponPending(false)
+  }
+
+  function handleRemoveCoupon() {
+    setAppliedCoupon(null)
+    setDiscountAmount(0)
+    setCouponInput('')
+    setCouponError(null)
+  }
 
   async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault()
@@ -246,18 +297,63 @@ export function CheckoutForm({
 
           <section className="space-y-4">
             <h2 className="font-serif text-2xl tracking-tight">Redeem code</h2>
-            <div className="space-y-2">
-              <Label htmlFor="couponCode">Promotion code</Label>
-              <Input
-                id="couponCode"
-                name="couponCode"
-                placeholder="Enter code like FIRST10"
-                autoCapitalize="characters"
-              />
-              <p className="text-xs text-muted-foreground">
-                Use your discount code on checkout. The code is validated server-side before payment.
-              </p>
-            </div>
+            <input type="hidden" name="couponCode" value={appliedCoupon ?? ''} />
+            {appliedCoupon ? (
+              <div className="flex items-center justify-between rounded-sm border border-primary bg-primary/5 p-4">
+                <div className="flex items-center gap-2 text-sm">
+                  <Tag className="size-4 text-gold" strokeWidth={1.5} />
+                  <span className="font-medium">{appliedCoupon}</span>
+                  <span className="text-muted-foreground">
+                    applied · −{formatPrice(discountAmount)}
+                  </span>
+                </div>
+                <button
+                  type="button"
+                  onClick={handleRemoveCoupon}
+                  className="text-xs tracking-wide text-muted-foreground uppercase transition-colors hover:text-foreground"
+                >
+                  Remove
+                </button>
+              </div>
+            ) : (
+              <div className="space-y-2">
+                <Label htmlFor="couponInput">Promotion code</Label>
+                <div className="flex gap-2">
+                  <Input
+                    id="couponInput"
+                    value={couponInput}
+                    onChange={(e) => setCouponInput(e.target.value.toUpperCase())}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter' && !e.nativeEvent.isComposing) {
+                        e.preventDefault()
+                        void handleApplyCoupon()
+                      }
+                    }}
+                    placeholder="Try FIRST10 or SAVE500"
+                    autoCapitalize="characters"
+                    className="uppercase"
+                  />
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={handleApplyCoupon}
+                    disabled={couponPending || !couponInput.trim()}
+                    className="h-11 shrink-0 px-6"
+                  >
+                    {couponPending ? '…' : 'Apply'}
+                  </Button>
+                </div>
+                {couponError ? (
+                  <p role="alert" className="text-xs text-destructive">
+                    {couponError}
+                  </p>
+                ) : (
+                  <p className="text-xs text-muted-foreground">
+                    Enter a code to preview your savings. It&apos;s re-validated server-side before payment.
+                  </p>
+                )}
+              </div>
+            )}
           </section>
 
           <section className="space-y-4">
@@ -319,6 +415,34 @@ export function CheckoutForm({
         <aside className="lg:sticky lg:top-24 lg:self-start">
           <div className="rounded-sm border border-border bg-card p-6">
             <h2 className="font-serif text-2xl tracking-tight">Order summary</h2>
+
+            {subtotal > 0 && (
+              <div className="mt-5 rounded-sm bg-secondary/50 p-4">
+                <p className="flex items-center gap-2 text-xs">
+                  <Truck className="size-4 shrink-0 text-gold" strokeWidth={1.5} />
+                  {remainingForFreeShipping === 0 ? (
+                    <span className="font-medium text-foreground">
+                      You&apos;ve unlocked complimentary shipping.
+                    </span>
+                  ) : (
+                    <span className="text-muted-foreground">
+                      Add{' '}
+                      <span className="font-medium text-foreground">
+                        {formatPrice(remainingForFreeShipping)}
+                      </span>{' '}
+                      more for complimentary shipping.
+                    </span>
+                  )}
+                </p>
+                <div className="mt-3 h-1.5 overflow-hidden rounded-full bg-border">
+                  <div
+                    className="h-full rounded-full bg-gold transition-all duration-500"
+                    style={{ width: `${freeShippingProgress}%` }}
+                  />
+                </div>
+              </div>
+            )}
+
             <ul className="mt-6 divide-y">
               {items.map((item) => (
                 <li key={lineKey(item)} className="flex gap-4 py-4">
@@ -355,10 +479,12 @@ export function CheckoutForm({
                   {shipping === 0 ? 'Complimentary' : formatPrice(shipping)}
                 </dd>
               </div>
-              <div className="flex items-center justify-between">
-                <dt className="text-muted-foreground">Discount</dt>
-                <dd className="tabular-nums">-{formatPrice(discountAmount)}</dd>
-              </div>
+              {discountAmount > 0 && (
+                <div className="flex items-center justify-between text-gold">
+                  <dt>Discount{appliedCoupon ? ` (${appliedCoupon})` : ''}</dt>
+                  <dd className="tabular-nums">−{formatPrice(discountAmount)}</dd>
+                </div>
+              )}
             </dl>
             <Separator className="my-4" />
             <div className="flex items-center justify-between">
