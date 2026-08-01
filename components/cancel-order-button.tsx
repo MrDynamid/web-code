@@ -36,15 +36,17 @@ export function CancelOrderButton({ orderId }: { orderId: number }) {
 
   return (
     <AlertDialog>
-      <AlertDialogTrigger asChild>
-        <Button
-          variant="ghost"
-          size="sm"
-          className="h-8 gap-1.5 text-xs text-muted-foreground hover:text-destructive"
-        >
-          <XCircle className="size-3.5" />
-          Cancel order
-        </Button>
+      <AlertDialogTrigger
+        render={
+          <Button
+            variant="ghost"
+            size="sm"
+            className="h-8 gap-1.5 text-xs text-muted-foreground hover:text-destructive"
+          />
+        }
+      >
+        <XCircle className="size-3.5" />
+        Cancel order
       </AlertDialogTrigger>
       <AlertDialogContent>
         <AlertDialogHeader>
