@@ -5,14 +5,22 @@ import Image from 'next/image'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { toast } from 'sonner'
+<<<<<<< HEAD
 import { Banknote, CreditCard, Tag, Truck } from 'lucide-react'
+=======
+import { Banknote, CreditCard } from 'lucide-react'
+>>>>>>> b40138d1871002c6187013e20ed0edbe04d957d4
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Separator } from '@/components/ui/separator'
 import { lineKey, useCart } from '@/lib/cart-context'
 import { formatPrice } from '@/lib/product-utils'
+<<<<<<< HEAD
 import { createOrder, verifyPayment, previewCoupon } from '@/app/actions/orders'
+=======
+import { createOrder, verifyPayment } from '@/app/actions/orders'
+>>>>>>> b40138d1871002c6187013e20ed0edbe04d957d4
 import { cn } from '@/lib/utils'
 
 const FREE_SHIPPING_THRESHOLD = 20000
@@ -50,10 +58,13 @@ export function CheckoutForm({
   const { items, subtotal, hydrated, clear } = useCart()
   const [placing, setPlacing] = useState(false)
   const [discountAmount, setDiscountAmount] = useState(0)
+<<<<<<< HEAD
   const [couponInput, setCouponInput] = useState('')
   const [appliedCoupon, setAppliedCoupon] = useState<string | null>(null)
   const [couponPending, setCouponPending] = useState(false)
   const [couponError, setCouponError] = useState<string | null>(null)
+=======
+>>>>>>> b40138d1871002c6187013e20ed0edbe04d957d4
   const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>(
     razorpayReady ? 'razorpay' : 'cod',
   )
