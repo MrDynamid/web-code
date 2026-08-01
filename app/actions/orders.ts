@@ -216,7 +216,6 @@ export async function createOrder(
 }
 
 /**
-<<<<<<< HEAD
  * Validates a promo code against a subtotal and returns the discount it would
  * apply, without creating an order. Used to preview savings at checkout. The
  * same rules are re-enforced server-side in createOrder, so this is safe to
@@ -255,8 +254,6 @@ export async function previewCoupon(
 }
 
 /**
-=======
->>>>>>> b40138d1871002c6187013e20ed0edbe04d957d4
  * Verifies the Razorpay payment signature and marks the order paid.
  */
 export async function verifyPayment(params: {

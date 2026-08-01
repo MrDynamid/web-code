@@ -49,11 +49,11 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en" className={`light bg-background ${jost.variable} ${cormorant.variable}`}>
-      <body className="font-sans antialiased">
+      <body className="font-sans antialiased transition-colors duration-300">
         <CartProvider>
           <div className="flex min-h-screen flex-col">
             <SiteHeader />
-            <main className="flex-1">{children}</main>
+            <main className="flex-1 transition-all duration-300">{children}</main>
             <SiteFooter />
           </div>
         </CartProvider>

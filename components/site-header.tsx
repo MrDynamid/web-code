@@ -2,7 +2,7 @@
 
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
-import { Heart, Menu, Search, User, LogIn } from 'lucide-react'
+import { Heart, Menu, Search, User, LogIn, Settings } from 'lucide-react'
 import { useState } from 'react'
 import {
   Sheet,
@@ -75,6 +75,9 @@ export function SiteHeader() {
                   <Link href="/orders" onClick={() => setMenuOpen(false)} className="rounded-sm px-4 py-2.5 transition-colors hover:bg-secondary">
                     My orders
                   </Link>
+                  <Link href="/admin" onClick={() => setMenuOpen(false)} className="rounded-sm px-4 py-2.5 transition-colors hover:bg-gold/10">
+                    Admin
+                  </Link>
                 </div>
               </SheetContent>
             </Sheet>
@@ -140,6 +143,14 @@ export function SiteHeader() {
               aria-label="Wishlist"
             >
               <Heart className="size-5" strokeWidth={1.5} />
+            </Link>
+            <Link
+              href="/admin"
+              className="hidden size-9 items-center justify-center rounded-full transition-colors hover:bg-gold/10 hover:text-gold sm:inline-flex"
+              aria-label="Admin panel"
+              title="Admin panel"
+            >
+              <Settings className="size-5" strokeWidth={1.5} />
             </Link>
             <CartDrawer />
           </div>

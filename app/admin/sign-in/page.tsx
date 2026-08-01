@@ -17,7 +17,7 @@ export default async function AdminSignInPage() {
         <AdminAuthForm />
         <Link
           href="/"
-          className="mt-10 text-xs tracking-[0.15em] text-muted-foreground uppercase transition-colors hover:text-foreground"
+          className="mt-10 text-xs tracking-[0.15em] text-muted-foreground uppercase transition-all duration-200 hover:text-foreground"
         >
           Back to store
         </Link>

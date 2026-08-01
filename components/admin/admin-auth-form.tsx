@@ -41,7 +41,7 @@ export function AdminAuthForm() {
   }
 
   return (
-    <div className="w-full max-w-sm">
+    <div className="w-full max-w-sm animate-in fade-in slide-in-from-bottom-4 duration-500">
       <div className="mb-8 text-center">
         <p className="text-[11px] tracking-[0.3em] text-muted-foreground uppercase">
           Maison Lumière
@@ -102,7 +102,7 @@ export function AdminAuthForm() {
           </p>
         )}
 
-        <Button type="submit" className="h-11 w-full" disabled={loading}>
+        <Button type="submit" className="h-11 w-full transition-all duration-200 hover:shadow-md" disabled={loading}>
           {loading && <Loader2 className="size-4 animate-spin" />}
           {mode === 'sign-in' ? 'Sign in' : 'Create account'}
         </Button>
@@ -114,7 +114,7 @@ export function AdminAuthForm() {
           setError(null)
           setMode(mode === 'sign-in' ? 'sign-up' : 'sign-in')
         }}
-        className="mt-6 w-full text-center text-sm text-muted-foreground transition-colors hover:text-foreground"
+        className="mt-6 w-full text-center text-sm text-muted-foreground transition-all duration-200 hover:text-foreground"
       >
         {mode === 'sign-in'
           ? 'Need to create the first admin account?'

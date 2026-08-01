@@ -43,7 +43,7 @@ export function AdminShell({
   return (
     <div className="flex min-h-svh flex-col bg-secondary/30 lg:flex-row">
       {/* Sidebar */}
-      <aside className="flex shrink-0 flex-col border-b border-border bg-card lg:h-svh lg:w-64 lg:border-r lg:border-b-0">
+      <aside className="flex shrink-0 flex-col border-b border-border bg-card transition-all duration-300 lg:h-svh lg:w-64 lg:border-r lg:border-b-0">
         <div className="flex items-center justify-between px-6 py-6">
           <Link href="/admin" className="flex flex-col leading-none">
             <span className="font-serif text-xl tracking-tight">Maison Lumière</span>
@@ -64,9 +64,9 @@ export function AdminShell({
                 key={item.href}
                 href={item.href}
                 className={cn(
-                  'flex items-center gap-3 whitespace-nowrap rounded-md px-3 py-2.5 text-sm transition-colors',
+                  'flex items-center gap-3 whitespace-nowrap rounded-md px-3 py-2.5 text-sm transition-all duration-200',
                   active
-                    ? 'bg-primary text-primary-foreground'
+                    ? 'bg-primary text-primary-foreground shadow-sm'
                     : 'text-foreground/70 hover:bg-secondary hover:text-foreground',
                 )}
               >
@@ -77,10 +77,10 @@ export function AdminShell({
           })}
         </nav>
 
-        <div className="hidden flex-col gap-3 border-t border-border p-4 lg:flex">
+        <div className="hidden flex-col gap-3 border-t border-border p-4 transition-all duration-300 lg:flex">
           <Link
             href="/"
-            className="flex items-center gap-2 text-sm text-muted-foreground transition-colors hover:text-foreground"
+            className="flex items-center gap-2 text-sm text-muted-foreground transition-all duration-200 hover:text-foreground hover:gap-3"
           >
             <Store className="size-4" strokeWidth={1.75} />
             View store
@@ -98,14 +98,14 @@ export function AdminShell({
 
       {/* Content */}
       <div className="flex min-w-0 flex-1 flex-col">
-        <header className="flex items-center justify-between gap-4 border-b border-border bg-card px-4 py-3 lg:hidden">
+        <header className="flex items-center justify-between gap-4 border-b border-border bg-card px-4 py-3 transition-all duration-300 lg:hidden">
           <span className="text-sm text-muted-foreground">{user.email}</span>
-          <Button variant="outline" size="sm" className="gap-2" onClick={handleSignOut}>
+          <Button variant="outline" size="sm" className="gap-2 transition-all duration-200 hover:gap-3" onClick={handleSignOut}>
             <LogOut className="size-4" strokeWidth={1.75} />
             Sign out
           </Button>
         </header>
-        <main className="flex-1 p-4 md:p-8">{children}</main>
+        <main className="flex-1 p-4 transition-all duration-300 md:p-8">{children}</main>
       </div>
     </div>
   )
