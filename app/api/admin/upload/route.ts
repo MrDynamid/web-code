@@ -1,10 +1,10 @@
 import { NextResponse } from 'next/server'
+import { put } from '@vercel/blob'
 import { requireAdmin } from '@/lib/admin-auth'
-import { getSupabaseServer } from '@/lib/supabase-server'
 
 const ALLOWED_TYPES = new Set(['image/jpeg', 'image/png', 'image/webp', 'image/gif'])
 const MAX_BYTES = 8 * 1024 * 1024 // 8 MB
-const BUCKETS = new Set(['product-images', 'banner-images', 'review-images', 'avatars'])
+const FOLDERS = new Set(['product-images', 'banner-images', 'review-images', 'avatars'])
 
 export async function POST(req: Request): Promise<NextResponse> {
   try {
@@ -15,7 +15,7 @@ export async function POST(req: Request): Promise<NextResponse> {
 
   const formData = await req.formData()
   const file = formData.get('file')
-  const bucket = (formData.get('bucket') as string) || 'product-images'
+  const folder = (formData.get('bucket') as string) || 'product-images'
 
   if (!(file instanceof File)) {
     return NextResponse.json({ error: 'No file provided.' }, { status: 400 })
@@ -29,26 +29,22 @@ export async function POST(req: Request): Promise<NextResponse> {
   if (file.size > MAX_BYTES) {
     return NextResponse.json({ error: 'File must be 8 MB or smaller.' }, { status: 413 })
   }
-  if (!BUCKETS.has(bucket)) {
-    return NextResponse.json({ error: 'Invalid storage bucket.' }, { status: 400 })
+  if (!FOLDERS.has(folder)) {
+    return NextResponse.json({ error: 'Invalid storage folder.' }, { status: 400 })
   }
 
   const safeName = file.name.replace(/[^a-z0-9._-]/gi, '-').toLowerCase()
-  const filePath = `${Date.now()}-${safeName}`
+  const pathname = `${folder}/${Date.now()}-${safeName}`
 
-  const supabase = getSupabaseServer()
-  const { data, error } = await supabase.storage
-    .from(bucket)
-    .upload(filePath, file, {
+  try {
+    const blob = await put(pathname, file, {
+      access: 'public',
       contentType: file.type,
-      upsert: false,
+      addRandomSuffix: true,
     })
-
-  if (error) {
-    return NextResponse.json({ error: 'Upload failed: ' + error.message }, { status: 500 })
+    return NextResponse.json({ url: blob.url })
+  } catch (error) {
+    const message = error instanceof Error ? error.message : 'Unknown error'
+    return NextResponse.json({ error: 'Upload failed: ' + message }, { status: 500 })
   }
-
-  const { data: urlData } = supabase.storage.from(bucket).getPublicUrl(data.path)
-
-  return NextResponse.json({ url: urlData.publicUrl })
 }
