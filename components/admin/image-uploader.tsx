@@ -3,7 +3,7 @@
 import { useCallback, useRef, useState } from 'react'
 import Image from 'next/image'
 import { toast } from 'sonner'
-import { ImagePlus, Loader2, X, Star } from 'lucide-react'
+import { ImagePlus, Loader as Loader2, X, Star } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { Button } from '@/components/ui/button'
 
