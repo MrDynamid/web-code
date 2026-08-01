@@ -1,10 +1,9 @@
 import { NextResponse } from 'next/server'
+import { put } from '@vercel/blob'
 import { requireAdmin } from '@/lib/admin-auth'
-import { getSupabaseServer } from '@/lib/supabase-server'
 
 const ALLOWED_TYPES = new Set(['image/jpeg', 'image/png', 'image/webp', 'image/gif'])
 const MAX_BYTES = 8 * 1024 * 1024 // 8 MB
-const BUCKETS = new Set(['product-images', 'banner-images', 'review-images', 'avatars'])
 
 export async function POST(req: Request): Promise<NextResponse> {
   try {
@@ -29,26 +28,19 @@ export async function POST(req: Request): Promise<NextResponse> {
   if (file.size > MAX_BYTES) {
     return NextResponse.json({ error: 'File must be 8 MB or smaller.' }, { status: 413 })
   }
-  if (!BUCKETS.has(bucket)) {
-    return NextResponse.json({ error: 'Invalid storage bucket.' }, { status: 400 })
-  }
 
-  const safeName = file.name.replace(/[^a-z0-9._-]/gi, '-').toLowerCase()
-  const filePath = `${Date.now()}-${safeName}`
+  try {
+    const safeName = file.name.replace(/[^a-z0-9._-]/gi, '-').toLowerCase()
+    const filename = `${bucket}/${Date.now()}-${safeName}`
 
-  const supabase = getSupabaseServer()
-  const { data, error } = await supabase.storage
-    .from(bucket)
-    .upload(filePath, file, {
+    const blob = await put(filename, file, {
+      access: 'public',
       contentType: file.type,
-      upsert: false,
     })
 
-  if (error) {
-    return NextResponse.json({ error: 'Upload failed: ' + error.message }, { status: 500 })
+    return NextResponse.json({ url: blob.url })
+  } catch (error) {
+    console.error('Upload error:', error)
+    return NextResponse.json({ error: 'Upload failed' }, { status: 500 })
   }
-
-  const { data: urlData } = supabase.storage.from(bucket).getPublicUrl(data.path)
-
-  return NextResponse.json({ url: urlData.publicUrl })
 }

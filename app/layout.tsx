@@ -21,25 +21,20 @@ const cormorant = Cormorant_Garamond({
 
 export const metadata: Metadata = {
   title: {
-    default: 'Maison Lumière — Refined Women’s Ready-to-Wear',
-    template: '%s — Maison Lumière',
+    default: 'ShopEase — Best Deals on Electronics, Fashion & More',
+    template: '%s | ShopEase',
   },
   description:
-    'Maison Lumière is a premium women’s ready-to-wear house crafting elevated essentials in silk, cashmere and fine wool. Timeless pieces designed to last.',
+    'ShopEase is your one-stop online marketplace for electronics, fashion, home & kitchen, beauty, sports and books. Free delivery on orders above ₹200.',
   generator: 'v0.app',
-  icons: {
-    icon: [
-      { url: '/icon-light-32x32.png', media: '(prefers-color-scheme: light)' },
-      { url: '/icon-dark-32x32.png', media: '(prefers-color-scheme: dark)' },
-      { url: '/icon.svg', type: 'image/svg+xml' },
-    ],
-    apple: '/apple-icon.png',
-  },
 }
 
 export const viewport: Viewport = {
-  colorScheme: 'light',
-  themeColor: '#f4efe6',
+  colorScheme: 'light dark',
+  themeColor: [
+    { media: '(prefers-color-scheme: light)', color: '#1c1a18' },
+    { media: '(prefers-color-scheme: dark)', color: '#1c1a18' },
+  ],
 }
 
 export default function RootLayout({
@@ -49,11 +44,11 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en" className={`light bg-background ${jost.variable} ${cormorant.variable}`}>
-      <body className="font-sans antialiased">
+      <body className="font-sans antialiased transition-colors duration-300">
         <CartProvider>
           <div className="flex min-h-screen flex-col">
             <SiteHeader />
-            <main className="flex-1">{children}</main>
+            <main className="flex-1 transition-all duration-300">{children}</main>
             <SiteFooter />
           </div>
         </CartProvider>

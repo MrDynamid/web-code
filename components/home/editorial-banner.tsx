@@ -6,13 +6,13 @@ import { ScrollReveal } from '@/components/scroll-reveal'
 import { cn } from '@/lib/utils'
 
 const FALLBACK = {
-  eyebrow: 'The cashmere edit',
-  title: 'The softest layers for the season ahead',
+  eyebrow: 'New Season',
+  title: 'Fresh arrivals for every style',
   subtitle:
-    'Our Grade-A Mongolian cashmere is spun for exceptional softness and longevity. Timeless knits designed to become the pieces you reach for again and again.',
-  ctaLabel: 'Shop knitwear',
-  ctaHref: '/products?category=Knitwear',
-  image: '/editorial/category-knitwear.png',
+    'Discover the latest in fashion, electronics and home. New products added every week from top brands.',
+  ctaLabel: 'Shop new arrivals',
+  ctaHref: '/products?sort=newest',
+  image: 'https://images.unsplash.com/photo-1441984904996-e0b6ba687e04?w=800&q=80',
 }
 
 export function EditorialBanner({
@@ -27,7 +27,7 @@ export function EditorialBanner({
   const subtitle = banner?.subtitle ?? FALLBACK.subtitle
   const ctaLabel = banner?.ctaLabel ?? FALLBACK.ctaLabel
   const ctaHref = banner?.ctaHref ?? FALLBACK.ctaHref
-  const image = banner?.image ?? FALLBACK.image
+  const image = (banner?.image && banner.image.startsWith('http')) ? banner.image : FALLBACK.image
 
   return (
     <section className="mx-auto max-w-7xl px-4 py-20 md:px-6">

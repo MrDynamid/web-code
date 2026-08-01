@@ -44,30 +44,30 @@ export default async function AdminDashboardPage() {
 
   return (
     <div className="mx-auto max-w-6xl">
-      <div className="mb-8">
+      <div className="mb-8 animate-in fade-in slide-in-from-top-4 duration-500">
         <p className="text-[11px] tracking-[0.25em] text-muted-foreground uppercase">Overview</p>
         <h1 className="mt-2 font-serif text-3xl tracking-tight md:text-4xl">Dashboard</h1>
       </div>
 
-      <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
-        {stats.map((stat) => (
+      <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3 animate-in fade-in slide-in-from-bottom-4 duration-500 delay-100">
+        {stats.map((stat, idx) => (
           <Link key={stat.label} href={stat.href}>
-            <Card className="transition-colors hover:border-gold">
+            <Card className="transition-all duration-300 hover:shadow-lg hover:border-gold hover:scale-105">
               <CardContent className="flex items-start justify-between gap-4">
                 <div>
                   <p className="text-sm text-muted-foreground">{stat.label}</p>
                   <p className="mt-2 font-serif text-3xl tracking-tight">{stat.value}</p>
                 </div>
-                <stat.icon className="size-5 text-gold" strokeWidth={1.5} />
+                <stat.icon className="size-5 text-gold transition-transform duration-300 group-hover:rotate-12" strokeWidth={1.5} />
               </CardContent>
             </Card>
           </Link>
         ))}
       </div>
 
-      <div className="mt-8 grid gap-6 lg:grid-cols-3">
+      <div className="mt-8 grid gap-6 lg:grid-cols-3 animate-in fade-in slide-in-from-bottom-4 duration-500 delay-200">
         {/* Recent orders */}
-        <Card className="lg:col-span-2">
+        <Card className="lg:col-span-2 transition-all duration-300 hover:shadow-md">
           <CardHeader className="flex flex-row items-center justify-between">
             <CardTitle className="font-serif text-xl">Recent orders</CardTitle>
             <Button asChild variant="ghost" size="sm" className="gap-1 text-gold">
@@ -79,8 +79,8 @@ export default async function AdminDashboardPage() {
               <p className="text-sm text-muted-foreground">No orders yet.</p>
             ) : (
               <ul className="divide-y divide-border">
-                {recentOrders.map((o) => (
-                  <li key={o.id} className="flex items-center justify-between gap-4 py-3">
+                {recentOrders.map((o, idx) => (
+                  <li key={o.id} className="flex items-center justify-between gap-4 py-3 transition-colors duration-200 hover:bg-secondary/50">
                     <div className="min-w-0">
                       <p className="truncate text-sm font-medium">
                         #{o.id} · {o.fullName}
@@ -107,7 +107,7 @@ export default async function AdminDashboardPage() {
 
         <div className="flex flex-col gap-6">
           {/* Low stock */}
-          <Card>
+          <Card className="transition-all duration-300 hover:shadow-md">
             <CardHeader className="flex flex-row items-center justify-between">
               <CardTitle className="font-serif text-lg">Low stock</CardTitle>
               <Button asChild variant="ghost" size="sm" className="gap-1 text-gold">
@@ -119,8 +119,8 @@ export default async function AdminDashboardPage() {
                 <p className="text-sm text-muted-foreground">All products well stocked.</p>
               ) : (
                 <ul className="divide-y divide-border">
-                  {lowStock.slice(0, 6).map((p) => (
-                    <li key={p.id} className="flex items-center justify-between py-2.5">
+                  {lowStock.slice(0, 6).map((p, idx) => (
+                    <li key={p.id} className="flex items-center justify-between py-2.5 transition-colors duration-200 hover:bg-destructive/5">
                       <span className="truncate text-sm">{p.name}</span>
                       <span className="ml-2 shrink-0 text-sm font-medium text-destructive">
                         {p.stock} left
@@ -133,7 +133,7 @@ export default async function AdminDashboardPage() {
           </Card>
 
           {/* Quick actions */}
-          <Card>
+          <Card className="transition-all duration-300 hover:shadow-md">
             <CardHeader>
               <CardTitle className="font-serif text-lg">Quick actions</CardTitle>
             </CardHeader>

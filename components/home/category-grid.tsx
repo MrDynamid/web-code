@@ -1,70 +1,81 @@
 import Image from 'next/image'
 import Link from 'next/link'
-import { ScrollReveal } from '@/components/scroll-reveal'
 
 const CATEGORY_TILES = [
   {
-    label: 'Dresses',
-    href: '/products?category=Dresses',
-    image: '/editorial/category-dresses.png',
-    caption: 'Fluid silhouettes',
+    label: 'Electronics',
+    href: '/products?category=Electronics',
+    image: 'https://images.unsplash.com/photo-1498049794561-7780e7231661?w=600&q=80',
+    caption: 'Phones, Laptops & More',
   },
   {
-    label: 'Outerwear',
-    href: '/products?category=Outerwear',
-    image: '/editorial/category-outerwear.png',
-    caption: 'Coats & tailoring',
+    label: 'Fashion',
+    href: '/products?category=Fashion',
+    image: 'https://images.unsplash.com/photo-1445205170230-053b83016050?w=600&q=80',
+    caption: 'Clothing & Footwear',
   },
   {
-    label: 'Knitwear',
-    href: '/products?category=Knitwear',
-    image: '/editorial/category-knitwear.png',
-    caption: 'Cashmere & merino',
+    label: 'Home & Kitchen',
+    href: '/products?category=Home+%26+Kitchen',
+    image: 'https://images.unsplash.com/photo-1556909114-f6e7ad7d3136?w=600&q=80',
+    caption: 'Appliances & Decor',
+  },
+  {
+    label: 'Beauty',
+    href: '/products?category=Beauty',
+    image: 'https://images.unsplash.com/photo-1596462502278-27bfdc403348?w=600&q=80',
+    caption: 'Skincare & Makeup',
+  },
+  {
+    label: 'Sports',
+    href: '/products?category=Sports',
+    image: 'https://images.unsplash.com/photo-1517836357463-d25dfeac3438?w=600&q=80',
+    caption: 'Fitness & Outdoor',
+  },
+  {
+    label: 'Books',
+    href: '/products?category=Books',
+    image: 'https://images.unsplash.com/photo-1495446815901-a7297e633e8d?w=600&q=80',
+    caption: 'Bestsellers & More',
   },
 ]
 
 export function CategoryGrid() {
   return (
-    <section className="mx-auto max-w-7xl px-4 py-20 md:px-6">
-      <ScrollReveal className="mb-10 flex items-end justify-between">
-        <div>
-          <p className="text-xs tracking-[0.2em] text-muted-foreground uppercase">
-            Shop by category
-          </p>
-          <h2 className="mt-2 font-serif text-3xl tracking-tight md:text-4xl">
-            The edit
+    <section className="bg-secondary/30 py-10">
+      <div className="mx-auto max-w-7xl px-4 md:px-6">
+        <div className="mb-6 flex items-end justify-between">
+          <h2 className="font-serif text-2xl font-bold tracking-tight md:text-3xl">
+            Shop by Category
           </h2>
+          <Link
+            href="/products"
+            className="hidden text-sm font-medium text-foreground/70 underline-offset-4 transition-colors hover:text-foreground hover:underline sm:block"
+          >
+            View all
+          </Link>
         </div>
-        <Link
-          href="/products"
-          className="hidden text-sm text-foreground/80 underline-offset-4 transition-colors hover:text-gold hover:underline sm:block"
-        >
-          View all
-        </Link>
-      </ScrollReveal>
-      <div className="grid gap-4 md:grid-cols-3">
-        {CATEGORY_TILES.map((tile, i) => (
-          <ScrollReveal key={tile.label} direction="up" delay={i * 120}>
-            <Link href={tile.href} className="group relative block">
-              <div className="relative aspect-4/5 overflow-hidden rounded-sm bg-muted">
-                <Image
-                  src={tile.image}
-                  alt={tile.label}
-                  fill
-                  sizes="(min-width: 768px) 33vw, 100vw"
-                  className="object-cover transition-transform duration-700 ease-out group-hover:scale-105"
-                />
-                <div className="absolute inset-0 bg-gradient-to-t from-primary/50 to-transparent" />
-                <div className="absolute bottom-0 left-0 p-6 text-background">
-                  <p className="text-[11px] tracking-[0.18em] uppercase opacity-90">
-                    {tile.caption}
-                  </p>
-                  <h3 className="mt-1 font-serif text-2xl tracking-tight">{tile.label}</h3>
+        <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-6">
+          {CATEGORY_TILES.map((tile) => (
+            <Link key={tile.label} href={tile.href} className="group">
+              <div className="flex flex-col items-center gap-2 rounded-xl border border-border bg-card p-3 text-center transition-all duration-200 hover:border-primary hover:shadow-md">
+                <div className="relative h-16 w-16 overflow-hidden rounded-full bg-muted">
+                  <Image
+                    src={tile.image}
+                    alt={tile.label}
+                    fill
+                    sizes="64px"
+                    className="object-cover transition-transform duration-300 group-hover:scale-110"
+                  />
+                </div>
+                <div>
+                  <p className="text-sm font-semibold leading-tight">{tile.label}</p>
+                  <p className="mt-0.5 text-[10px] text-muted-foreground leading-tight">{tile.caption}</p>
                 </div>
               </div>
             </Link>
-          </ScrollReveal>
-        ))}
+          ))}
+        </div>
       </div>
     </section>
   )

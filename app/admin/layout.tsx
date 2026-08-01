@@ -4,7 +4,7 @@ import { getSession } from '@/lib/admin-auth'
 import { AdminShell } from '@/components/admin/admin-shell'
 
 export const metadata = {
-  title: 'Admin · Maison Lumière',
+  title: 'Admin Panel | ShopEase',
 }
 
 export default async function AdminLayout({ children }: { children: ReactNode }) {

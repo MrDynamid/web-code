@@ -1,9 +1,19 @@
 'use client'
 
 import Link from 'next/link'
-import { usePathname } from 'next/navigation'
-import { Heart, Menu, Search, User, LogIn } from 'lucide-react'
-import { useState } from 'react'
+import { usePathname, useRouter } from 'next/navigation'
+import {
+  Heart,
+  Menu,
+  Search,
+  ShoppingCart,
+  User,
+  LogIn,
+  Settings,
+  ChevronDown,
+  Package,
+} from 'lucide-react'
+import { useState, useRef } from 'react'
 import {
   Sheet,
   SheetContent,
@@ -15,134 +25,189 @@ import { CartDrawer } from '@/components/cart-drawer'
 import { cn } from '@/lib/utils'
 import { authClient } from '@/lib/auth-client'
 
-const NAV_LINKS = [
-  { label: 'New Arrivals', href: '/products?sort=newest' },
-  { label: 'Dresses', href: '/products?category=Dresses' },
-  { label: 'Outerwear', href: '/products?category=Outerwear' },
-  { label: 'Knitwear', href: '/products?category=Knitwear' },
-  { label: 'Accessories', href: '/products?category=Accessories' },
-  { label: 'Shop All', href: '/products' },
+const CATEGORIES = [
+  { label: 'All', href: '/products' },
+  { label: 'Electronics', href: '/products?category=Electronics' },
+  { label: 'Fashion', href: '/products?category=Fashion' },
+  { label: 'Home & Kitchen', href: '/products?category=Home+%26+Kitchen' },
+  { label: 'Beauty', href: '/products?category=Beauty' },
+  { label: 'Sports', href: '/products?category=Sports' },
+  { label: 'Books', href: '/products?category=Books' },
 ]
 
 export function SiteHeader() {
   const [menuOpen, setMenuOpen] = useState(false)
+  const [searchQuery, setSearchQuery] = useState('')
   const pathname = usePathname()
+  const router = useRouter()
   const { data: session } = authClient.useSession()
   const accountHref = session?.user ? '/account' : '/login'
 
+  function handleSearch(e: React.FormEvent) {
+    e.preventDefault()
+    if (searchQuery.trim()) router.push(`/products?q=${encodeURIComponent(searchQuery.trim())}`)
+  }
+
   return (
-    <header className="sticky top-0 z-50 bg-background/90 backdrop-blur-md">
+    <header className="sticky top-0 z-50 shadow-sm">
+      {/* Top bar */}
       <div className="bg-primary text-primary-foreground">
-        <p className="mx-auto max-w-7xl px-4 py-2 text-center text-xs tracking-[0.15em] uppercase">
-          Complimentary shipping on orders over ₹20,000
+        <p className="mx-auto max-w-7xl px-4 py-1.5 text-center text-[11px] tracking-widest uppercase">
+          Free delivery on orders above ₹200 &nbsp;·&nbsp; Use code{' '}
+          <span className="font-bold">WELCOME10</span> for 10% off
         </p>
       </div>
 
-      <div className="border-b border-border">
-        <div className="mx-auto flex h-16 max-w-7xl items-center justify-between gap-4 px-4 md:h-20 md:px-6">
-          {/* Left: mobile menu + desktop nav */}
-          <div className="flex flex-1 items-center gap-1">
-            <Sheet open={menuOpen} onOpenChange={setMenuOpen}>
-              <SheetTrigger
-                className="inline-flex size-9 items-center justify-center rounded-full transition-colors hover:bg-secondary lg:hidden"
-                aria-label="Open menu"
-              >
-                <Menu className="size-5" strokeWidth={1.5} />
-              </SheetTrigger>
-              <SheetContent side="left" className="w-full p-0 sm:max-w-sm">
-                <SheetHeader className="border-b px-6 py-5">
-                  <SheetTitle className="font-serif text-2xl font-normal">Menu</SheetTitle>
-                </SheetHeader>
-                <nav className="flex flex-col px-2 py-4">
-                  {NAV_LINKS.map((link) => (
+      {/* Main header */}
+      <div className="bg-foreground text-background">
+        <div className="mx-auto flex h-14 max-w-7xl items-center gap-3 px-4 md:h-16 md:gap-4 md:px-6">
+          {/* Mobile menu */}
+          <Sheet open={menuOpen} onOpenChange={setMenuOpen}>
+            <SheetTrigger
+              className="inline-flex size-9 shrink-0 items-center justify-center rounded-md transition-colors hover:bg-white/10 lg:hidden"
+              aria-label="Open menu"
+            >
+              <Menu className="size-5" />
+            </SheetTrigger>
+            <SheetContent side="left" className="w-full p-0 sm:max-w-xs">
+              <SheetHeader className="border-b px-6 py-4">
+                <SheetTitle className="font-serif text-xl font-normal">
+                  {session?.user ? `Hello, ${session.user.name?.split(' ')[0] || 'User'}` : 'Hello, Sign in'}
+                </SheetTitle>
+              </SheetHeader>
+              <nav className="flex flex-col divide-y">
+                <div className="px-2 py-3">
+                  <p className="px-4 pb-1 text-[10px] font-bold tracking-widest text-muted-foreground uppercase">
+                    Categories
+                  </p>
+                  {CATEGORIES.map((cat) => (
                     <Link
-                      key={link.href}
-                      href={link.href}
+                      key={cat.href}
+                      href={cat.href}
                       onClick={() => setMenuOpen(false)}
-                      className="rounded-sm px-4 py-3 font-serif text-xl transition-colors hover:bg-secondary"
+                      className="flex items-center rounded-md px-4 py-2.5 text-sm font-medium transition-colors hover:bg-secondary"
                     >
-                      {link.label}
+                      {cat.label}
                     </Link>
                   ))}
-                </nav>
-                <div className="mt-2 flex flex-col gap-1 border-t px-2 py-4 text-sm">
-                  <Link href={accountHref} onClick={() => setMenuOpen(false)} className="rounded-sm px-4 py-2.5 transition-colors hover:bg-secondary">
-                    {session?.user ? 'My account' : 'Sign in'}
+                </div>
+                <div className="px-2 py-3">
+                  <p className="px-4 pb-1 text-[10px] font-bold tracking-widest text-muted-foreground uppercase">
+                    Account
+                  </p>
+                  <Link href={accountHref} onClick={() => setMenuOpen(false)} className="flex items-center gap-2 rounded-md px-4 py-2.5 text-sm transition-colors hover:bg-secondary">
+                    <User className="size-4" /> {session?.user ? 'My Account' : 'Sign In'}
                   </Link>
-                  <Link href="/wishlist" onClick={() => setMenuOpen(false)} className="rounded-sm px-4 py-2.5 transition-colors hover:bg-secondary">
-                    Wishlist
+                  <Link href="/orders" onClick={() => setMenuOpen(false)} className="flex items-center gap-2 rounded-md px-4 py-2.5 text-sm transition-colors hover:bg-secondary">
+                    <Package className="size-4" /> My Orders
                   </Link>
-                  <Link href="/orders" onClick={() => setMenuOpen(false)} className="rounded-sm px-4 py-2.5 transition-colors hover:bg-secondary">
-                    My orders
+                  <Link href="/wishlist" onClick={() => setMenuOpen(false)} className="flex items-center gap-2 rounded-md px-4 py-2.5 text-sm transition-colors hover:bg-secondary">
+                    <Heart className="size-4" /> Wishlist
+                  </Link>
+                  <Link href="/admin" onClick={() => setMenuOpen(false)} className="flex items-center gap-2 rounded-md px-4 py-2.5 text-sm text-gold transition-colors hover:bg-secondary">
+                    <Settings className="size-4" /> Admin Panel
                   </Link>
                 </div>
-              </SheetContent>
-            </Sheet>
+              </nav>
+            </SheetContent>
+          </Sheet>
 
-            <nav className="hidden items-center gap-6 lg:flex">
-              {NAV_LINKS.slice(0, 5).map((link) => {
-                const active = pathname.startsWith('/products') && link.href.includes('category')
-                  ? pathname === '/products' && link.href === '/products'
-                  : false
-                return (
-                  <Link
-                    key={link.href}
-                    href={link.href}
-                    className={cn(
-                      'text-[13px] tracking-wide text-foreground/80 transition-colors hover:text-gold',
-                      active && 'text-gold',
-                    )}
-                  >
-                    {link.label}
-                  </Link>
-                )
-              })}
-            </nav>
-          </div>
-
-          {/* Center: logo */}
+          {/* Logo */}
           <Link
             href="/"
-            className="flex shrink-0 flex-col items-center leading-none"
-            aria-label="Maison Lumière home"
+            className="shrink-0"
+            aria-label="ShopEase home"
           >
-            <span className="font-serif text-2xl tracking-tight md:text-[26px]">
-              Maison Lumière
-            </span>
-            <span className="mt-0.5 text-[9px] tracking-[0.35em] text-muted-foreground uppercase">
-              Paris
+            <span className="font-serif text-xl font-bold tracking-tight text-background md:text-2xl">
+              ShopEase
             </span>
           </Link>
 
-          {/* Right: icons */}
-          <div className="flex flex-1 items-center justify-end gap-0.5">
-            <form action="/products" className="hidden items-center sm:flex">
-              <label className="sr-only" htmlFor="site-search">Search products</label>
-              <input id="site-search" name="q" placeholder="Search" className="w-0 border-0 bg-transparent text-sm opacity-0 outline-none transition-all focus:w-36 focus:opacity-100" />
-              <button type="submit" className="inline-flex size-9 items-center justify-center rounded-full transition-colors hover:bg-secondary" aria-label="Search products">
-                <Search className="size-5" strokeWidth={1.5} />
-              </button>
-            </form>
+          {/* Search bar (center, prominent) */}
+          <form
+            onSubmit={handleSearch}
+            className="flex flex-1 items-center overflow-hidden rounded-md bg-background"
+          >
+            <input
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              placeholder="Search products, brands and more..."
+              className="flex-1 min-w-0 bg-transparent px-3 py-2 text-sm text-foreground placeholder:text-muted-foreground outline-none"
+              aria-label="Search products"
+            />
+            <button
+              type="submit"
+              className="flex h-9 w-10 shrink-0 items-center justify-center bg-gold text-gold-foreground transition-colors hover:bg-gold/90"
+              aria-label="Submit search"
+            >
+              <Search className="size-4" />
+            </button>
+          </form>
+
+          {/* Right icons */}
+          <div className="flex shrink-0 items-center gap-1">
             <Link
               href={accountHref}
-              className="hidden size-9 items-center justify-center rounded-full transition-colors hover:bg-secondary sm:inline-flex"
-              aria-label={session?.user ? 'My account' : 'Sign in'}
+              className="hidden items-center gap-1 rounded-md px-2 py-1.5 text-background transition-colors hover:bg-white/10 md:flex"
             >
-              {session?.user ? (
-                <User className="size-5" strokeWidth={1.5} />
-              ) : (
-                <LogIn className="size-5" strokeWidth={1.5} />
-              )}
+              <User className="size-4" />
+              <div className="hidden text-left lg:block">
+                <p className="text-[10px] text-background/70">Hello,</p>
+                <p className="text-xs font-bold leading-none">
+                  {session?.user ? session.user.name?.split(' ')[0] || 'User' : 'Sign In'}
+                </p>
+              </div>
+            </Link>
+            <Link
+              href="/orders"
+              className="hidden items-center gap-1 rounded-md px-2 py-1.5 text-background transition-colors hover:bg-white/10 md:flex"
+            >
+              <Package className="size-4" />
+              <div className="hidden text-left lg:block">
+                <p className="text-[10px] text-background/70">Returns &</p>
+                <p className="text-xs font-bold leading-none">Orders</p>
+              </div>
             </Link>
             <Link
               href="/wishlist"
-              className="inline-flex size-9 items-center justify-center rounded-full transition-colors hover:bg-secondary"
+              className="inline-flex size-9 items-center justify-center rounded-md text-background transition-colors hover:bg-white/10"
               aria-label="Wishlist"
             >
-              <Heart className="size-5" strokeWidth={1.5} />
+              <Heart className="size-5" />
+            </Link>
+            <Link
+              href="/admin"
+              className="hidden size-9 items-center justify-center rounded-md text-gold transition-colors hover:bg-white/10 md:inline-flex"
+              aria-label="Admin panel"
+              title="Admin panel"
+            >
+              <Settings className="size-5" />
             </Link>
             <CartDrawer />
           </div>
+        </div>
+      </div>
+
+      {/* Category nav bar */}
+      <div className="hidden border-b border-border bg-background lg:block">
+        <div className="mx-auto flex max-w-7xl items-center gap-6 overflow-x-auto px-6">
+          {CATEGORIES.map((cat) => {
+            const active = cat.href === '/products'
+              ? pathname === '/products' && !pathname.includes('category')
+              : false
+            return (
+              <Link
+                key={cat.href}
+                href={cat.href}
+                className={cn(
+                  'shrink-0 py-2.5 text-[13px] font-medium transition-colors hover:text-gold whitespace-nowrap',
+                  active ? 'border-b-2 border-gold text-gold' : 'text-foreground/70',
+                )}
+              >
+                {cat.label}
+              </Link>
+            )
+          })}
         </div>
       </div>
     </header>

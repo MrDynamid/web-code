@@ -4,7 +4,7 @@ import { getSession } from '@/lib/admin-auth'
 import { AdminAuthForm } from '@/components/admin/admin-auth-form'
 
 export const metadata = {
-  title: 'Admin sign in · Maison Lumière',
+  title: 'Admin Sign In | ShopEase',
 }
 
 export default async function AdminSignInPage() {
@@ -17,7 +17,7 @@ export default async function AdminSignInPage() {
         <AdminAuthForm />
         <Link
           href="/"
-          className="mt-10 text-xs tracking-[0.15em] text-muted-foreground uppercase transition-colors hover:text-foreground"
+          className="mt-10 text-xs tracking-[0.15em] text-muted-foreground uppercase transition-all duration-200 hover:text-foreground"
         >
           Back to store
         </Link>

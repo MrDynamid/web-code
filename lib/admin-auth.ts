@@ -6,6 +6,7 @@ import { auth } from '@/lib/auth'
  * Returns the current session, or null. Safe to call anywhere on the server.
  */
 export async function getSession() {
+  if (!auth?.api) return null
   return auth.api.getSession({ headers: await headers() })
 }
 
