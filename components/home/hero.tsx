@@ -5,13 +5,13 @@ import { buttonVariants } from '@/components/ui/button'
 import { cn } from '@/lib/utils'
 
 const FALLBACK = {
-  eyebrow: 'The Autumn Collection',
-  title: 'Quiet luxury, made to last',
+  eyebrow: 'Deals of the Day',
+  title: 'Top Brands, Best Prices',
   subtitle:
-    'Elevated essentials in silk, cashmere and fine wool — designed in Paris and crafted to be worn for years, not seasons.',
-  ctaLabel: 'Shop the collection',
+    'Millions of products across electronics, fashion, home and more. Fast delivery, easy returns.',
+  ctaLabel: 'Shop Now',
   ctaHref: '/products',
-  image: '/editorial/hero.png',
+  image: 'https://images.unsplash.com/photo-1607082348824-0a96f2a4b9da?w=1400&q=80',
 }
 
 export function Hero({ banner }: { banner?: Banner | null }) {
@@ -20,42 +20,42 @@ export function Hero({ banner }: { banner?: Banner | null }) {
   const subtitle = banner?.subtitle ?? FALLBACK.subtitle
   const ctaLabel = banner?.ctaLabel ?? FALLBACK.ctaLabel
   const ctaHref = banner?.ctaHref ?? FALLBACK.ctaHref
-  const image = banner?.image ?? FALLBACK.image
+  const image = (banner?.image && banner.image.startsWith('http')) ? banner.image : FALLBACK.image
 
   return (
     <section className="relative">
-      <div className="relative h-[80vh] min-h-[560px] w-full overflow-hidden">
+      <div className="relative h-[60vh] min-h-[420px] w-full overflow-hidden sm:h-[70vh] sm:min-h-[500px]">
         <Image
-          src={image || '/placeholder.svg'}
+          src={image}
           alt={title}
           fill
           priority
           sizes="100vw"
-          className="animate-kenburns object-cover object-top"
+          className="object-cover object-center"
         />
-        <div className="absolute inset-0 bg-gradient-to-r from-primary/40 via-primary/10 to-transparent" />
+        <div className="absolute inset-0 bg-gradient-to-r from-black/70 via-black/40 to-transparent" />
         <div className="absolute inset-0 flex items-center">
           <div className="mx-auto flex w-full max-w-7xl px-4 md:px-6">
-            <div className="max-w-xl text-background">
-              <p className="animate-fade-slide text-xs tracking-[0.3em] uppercase">
+            <div className="max-w-xl text-white">
+              <p className="animate-fade-slide rounded-sm bg-yellow-400 px-2 py-0.5 text-[11px] font-semibold tracking-widest text-black uppercase w-fit">
                 {eyebrow}
               </p>
               <h1
-                className="animate-fade-slide mt-4 font-serif text-5xl leading-[1.05] tracking-tight text-balance md:text-7xl"
+                className="animate-fade-slide mt-4 font-serif text-4xl font-bold leading-tight tracking-tight text-balance md:text-6xl"
                 style={{ animationDelay: '120ms' }}
               >
                 {title}
               </h1>
               {subtitle && (
                 <p
-                  className="animate-fade-slide mt-5 max-w-md text-sm leading-relaxed text-background/90 md:text-base"
+                  className="animate-fade-slide mt-4 max-w-md text-sm leading-relaxed text-white/85 md:text-base"
                   style={{ animationDelay: '240ms' }}
                 >
                   {subtitle}
                 </p>
               )}
               <div
-                className="animate-fade-slide mt-8 flex flex-wrap gap-3"
+                className="animate-fade-slide mt-6 flex flex-wrap gap-3"
                 style={{ animationDelay: '360ms' }}
               >
                 {ctaLabel && (
@@ -63,20 +63,20 @@ export function Hero({ banner }: { banner?: Banner | null }) {
                     href={ctaHref || '/products'}
                     className={cn(
                       buttonVariants({ variant: 'default' }),
-                      'h-12 bg-background px-8 text-sm text-foreground hover:bg-background/90',
+                      'h-11 bg-yellow-400 px-8 text-sm font-bold text-black hover:bg-yellow-300',
                     )}
                   >
                     {ctaLabel}
                   </Link>
                 )}
                 <Link
-                  href="/products?category=Outerwear"
+                  href="/products"
                   className={cn(
                     buttonVariants({ variant: 'outline' }),
-                    'h-12 border-background/60 bg-transparent px-8 text-sm text-background hover:bg-background/10 hover:text-background',
+                    'h-11 border-white/60 bg-transparent px-8 text-sm text-white hover:bg-white/10 hover:text-white',
                   )}
                 >
-                  Explore outerwear
+                  Browse all deals
                 </Link>
               </div>
             </div>

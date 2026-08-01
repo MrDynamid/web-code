@@ -6,12 +6,12 @@ import type { Product } from '@/lib/db/schema'
 export type { Product }
 
 export const CATEGORIES = [
-  'Dresses',
-  'Outerwear',
-  'Knitwear',
-  'Tops',
-  'Bottoms',
-  'Accessories',
+  'Electronics',
+  'Fashion',
+  'Home & Kitchen',
+  'Books',
+  'Beauty',
+  'Sports',
 ] as const
 
 export type SortOption = 'featured' | 'price-asc' | 'price-desc' | 'newest'
