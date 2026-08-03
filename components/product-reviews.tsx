@@ -1,189 +1,236 @@
-'use client'
+"use client"
 
-import { useActionState, useState } from 'react'
-import { useRouter } from 'next/navigation'
-import Link from 'next/link'
-import { toast } from 'sonner'
-import { Loader2, Star } from 'lucide-react'
-import type { Review } from '@/lib/db/schema'
-import { addReview, type ReviewActionState } from '@/app/actions/reviews'
-import { cn } from '@/lib/utils'
-import { Button } from '@/components/ui/button'
-import { Input } from '@/components/ui/input'
-import { Label } from '@/components/ui/label'
-import { Textarea } from '@/components/ui/textarea'
-
-function Stars({ value, className }: { value: number; className?: string }) {
-  return (
-    <span className={cn('inline-flex', className)} aria-label={`${value} out of 5 stars`}>
-      {[1, 2, 3, 4, 5].map((n) => (
-        <Star
-          key={n}
-          className={cn(
-            'size-4',
-            n <= Math.round(value)
-              ? 'fill-gold text-gold'
-              : 'fill-transparent text-muted-foreground/40',
-          )}
-        />
-      ))}
-    </span>
-  )
-}
-
-function StarPicker({ value, onChange }: { value: number; onChange: (v: number) => void }) {
-  const [hover, setHover] = useState(0)
-  return (
-    <div className="flex items-center gap-1" role="radiogroup" aria-label="Rating">
-      {[1, 2, 3, 4, 5].map((n) => (
-        <button
-          key={n}
-          type="button"
-          role="radio"
-          aria-checked={value === n}
-          aria-label={`${n} star${n === 1 ? '' : 's'}`}
-          className="rounded p-0.5 transition-transform hover:scale-110"
-          onMouseEnter={() => setHover(n)}
-          onMouseLeave={() => setHover(0)}
-          onClick={() => onChange(n)}
-        >
-          <Star
-            className={cn(
-              'size-6',
-              n <= (hover || value)
-                ? 'fill-gold text-gold'
-                : 'fill-transparent text-muted-foreground/40',
-            )}
-          />
-        </button>
-      ))}
-    </div>
-  )
-}
+import { useState, useTransition } from "react"
+import Link from "next/link"
+import { Star, ThumbsUp } from "lucide-react"
+import { toast } from "sonner"
+import type { Review } from "@/lib/catalog"
+import { formatDate } from "@/lib/format"
+import { submitReview } from "@/lib/account.actions"
+import { toggleReviewHelpful } from "@/lib/reviews.actions"
+import { StarRating } from "@/components/star-rating"
+import { SmartImage } from "@/components/smart-image"
+import { cn } from "@/lib/utils"
 
 export function ProductReviews({
-  productId,
+  slug,
   reviews,
-  averageRating,
-  reviewCount,
-  isSignedIn,
+  votedIds,
+  isAuthenticated,
+  authorName,
 }: {
-  productId: number
+  slug: string
   reviews: Review[]
-  averageRating: number
-  reviewCount: number
-  isSignedIn: boolean
+  votedIds: string[]
+  isAuthenticated: boolean
+  authorName: string
 }) {
-  const router = useRouter()
-  const [rating, setRating] = useState(5)
-
-  const [, formAction, pending] = useActionState(
-    async (prev: ReviewActionState, formData: FormData) => {
-      formData.set('rating', String(rating))
-      const result = await addReview(prev, formData)
-      if (result?.success) {
-        toast.success('Thanks for your review!')
-        router.refresh()
-      } else if (result?.error) {
-        toast.error(result.error)
-      }
-      return result
-    },
-    null,
+  const [voted, setVoted] = useState<string[]>(votedIds)
+  const [counts, setCounts] = useState<Record<string, number>>(() =>
+    Object.fromEntries(reviews.map((review) => [review.id, review.helpful_count])),
   )
+  const [formOpen, setFormOpen] = useState(false)
+
+  function vote(id: string) {
+    if (!isAuthenticated) {
+      toast.error("Sign in to mark reviews helpful")
+      return
+    }
+    const wasVoted = voted.includes(id)
+    // Optimistic flip, reconciled from the action's answer.
+    setVoted((current) => (wasVoted ? current.filter((value) => value !== id) : [...current, id]))
+    setCounts((current) => ({ ...current, [id]: Math.max(0, (current[id] ?? 0) + (wasVoted ? -1 : 1)) }))
+    void toggleReviewHelpful({ review_id: id })
+      .then((result) => {
+        setVoted((current) =>
+          result.voted ? [...new Set([...current, id])] : current.filter((value) => value !== id),
+        )
+      })
+      .catch(() => {
+        setVoted((current) => (wasVoted ? [...new Set([...current, id])] : current.filter((v) => v !== id)))
+        setCounts((current) => ({ ...current, [id]: Math.max(0, (current[id] ?? 0) + (wasVoted ? 1 : -1)) }))
+        toast.error("Couldn't record that vote.")
+      })
+  }
 
   return (
-    <section className="mt-16 border-t border-border pt-12" id="reviews">
-      <div className="grid gap-10 lg:grid-cols-[320px_1fr]">
+    <section aria-labelledby="reviews-heading" className="border-t pt-12">
+      <div className="flex flex-wrap items-end justify-between gap-4">
         <div>
-          <h2 className="text-xl tracking-[0.04em]">Customer Reviews</h2>
-          <div className="mt-4 flex items-center gap-3">
-            <span className="text-4xl font-light">{averageRating.toFixed(1)}</span>
-            <div className="grid gap-1">
-              <Stars value={averageRating} />
-              <span className="text-xs text-muted-foreground">
-                Based on {reviewCount} review{reviewCount === 1 ? '' : 's'}
-              </span>
-            </div>
-          </div>
-
-          <div className="mt-8">
-            {isSignedIn ? (
-              <form action={formAction} className="grid gap-4">
-                <input type="hidden" name="productId" value={productId} />
-                <div className="grid gap-2">
-                  <Label>Your rating</Label>
-                  <StarPicker value={rating} onChange={setRating} />
-                </div>
-                <div className="grid gap-2">
-                  <Label htmlFor="review-title">Title (optional)</Label>
-                  <Input id="review-title" name="title" placeholder="Summarise your experience" />
-                </div>
-                <div className="grid gap-2">
-                  <Label htmlFor="review-body">Review</Label>
-                  <Textarea
-                    id="review-body"
-                    name="body"
-                    rows={4}
-                    required
-                    placeholder="What did you think of the fit, fabric and quality?"
-                  />
-                </div>
-                <Button type="submit" disabled={pending} className="w-fit gap-2">
-                  {pending && <Loader2 className="size-4 animate-spin" />}
-                  Submit review
-                </Button>
-              </form>
-            ) : (
-              <div className="rounded-lg border border-border p-5 text-sm text-muted-foreground">
-                <Link href="/login" className="font-medium text-foreground underline">
-                  Sign in
-                </Link>{' '}
-                to write a review and share your experience.
-              </div>
-            )}
-          </div>
+          <p className="text-eyebrow text-muted-foreground">Reviews</p>
+          <h2 id="reviews-heading" className="mt-2 font-display text-3xl">
+            What our clients say
+          </h2>
         </div>
-
-        <div>
-          {reviews.length === 0 ? (
-            <p className="text-sm text-muted-foreground">
-              No reviews yet. Be the first to review this piece.
-            </p>
-          ) : (
-            <ul className="grid gap-6">
-              {reviews.map((review) => (
-                <li key={review.id} className="border-b border-border pb-6 last:border-0">
-                  <div className="flex items-center justify-between gap-4">
-                    <div className="flex items-center gap-3">
-                      <span className="flex size-9 items-center justify-center rounded-full bg-muted text-xs font-medium uppercase">
-                        {review.userName.slice(0, 2)}
-                      </span>
-                      <div>
-                        <p className="text-sm font-medium">{review.userName}</p>
-                        <Stars value={review.rating} />
-                      </div>
-                    </div>
-                    <time className="text-xs text-muted-foreground">
-                      {new Date(review.createdAt).toLocaleDateString('en-IN', {
-                        day: 'numeric',
-                        month: 'short',
-                        year: 'numeric',
-                      })}
-                    </time>
-                  </div>
-                  {review.title && (
-                    <p className="mt-3 text-sm font-medium">{review.title}</p>
-                  )}
-                  <p className="mt-1 text-sm leading-relaxed text-muted-foreground">
-                    {review.body}
-                  </p>
-                </li>
-              ))}
-            </ul>
-          )}
-        </div>
+        {isAuthenticated ? (
+          <button
+            type="button"
+            onClick={() => setFormOpen((open) => !open)}
+            className="rounded-md border px-5 py-2.5 text-xs tracking-[0.16em] uppercase transition-colors hover:border-primary hover:text-primary"
+          >
+            {formOpen ? "Cancel" : "Write a review"}
+          </button>
+        ) : (
+          <Link href="/auth" className="link-underline text-sm text-primary">
+            Sign in to write a review
+          </Link>
+        )}
       </div>
+
+      {formOpen ? <ReviewForm slug={slug} authorName={authorName} onDone={() => setFormOpen(false)} /> : null}
+
+      {reviews.length === 0 ? (
+        <p className="mt-8 text-sm text-muted-foreground">
+          No reviews yet — be the first to share how this piece fits.
+        </p>
+      ) : (
+        <ul className="mt-8 grid gap-6 md:grid-cols-2">
+          {reviews.map((review) => (
+            <li key={review.id} className="rounded-lg border bg-card p-5">
+              <div className="flex items-start justify-between gap-3">
+                <div>
+                  <div className="flex items-center gap-2">
+                    <StarRating value={review.rating} size={13} />
+                    {review.verified ? (
+                      <span className="rounded-full bg-secondary px-2 py-0.5 text-[10px] tracking-[0.12em] uppercase text-muted-foreground">
+                        Verified buyer
+                      </span>
+                    ) : null}
+                  </div>
+                  {review.title ? <h3 className="mt-2 font-display text-lg">{review.title}</h3> : null}
+                </div>
+                <span className="shrink-0 text-xs text-muted-foreground">{formatDate(review.created_at)}</span>
+              </div>
+
+              <p className="mt-2 text-sm leading-relaxed text-muted-foreground">{review.body}</p>
+
+              {review.image_url ? (
+                <SmartImage
+                  src={review.image_url}
+                  alt={`Photo from ${review.author_name}'s review`}
+                  width={320}
+                  height={320}
+                  loading="lazy"
+                  decoding="async"
+                  className="mt-4 h-28 w-28 rounded-md object-cover"
+                />
+              ) : null}
+
+              <div className="mt-4 flex items-center justify-between gap-3 border-t pt-3">
+                <span className="text-xs text-muted-foreground">{review.author_name}</span>
+                <button
+                  type="button"
+                  onClick={() => vote(review.id)}
+                  aria-pressed={voted.includes(review.id)}
+                  className={cn(
+                    "flex items-center gap-1.5 text-xs transition-colors",
+                    voted.includes(review.id) ? "text-primary" : "text-muted-foreground hover:text-foreground",
+                  )}
+                >
+                  <ThumbsUp width={13} height={13} strokeWidth={1.6} />
+                  Helpful{counts[review.id] ? ` (${counts[review.id]})` : ""}
+                </button>
+              </div>
+            </li>
+          ))}
+        </ul>
+      )}
     </section>
+  )
+}
+
+function ReviewForm({ slug, authorName, onDone }: { slug: string; authorName: string; onDone: () => void }) {
+  const [rating, setRating] = useState(5)
+  const [pending, startTransition] = useTransition()
+
+  return (
+    <form
+      className="mt-6 grid gap-4 rounded-lg border bg-card p-5"
+      onSubmit={(event) => {
+        event.preventDefault()
+        const form = new FormData(event.currentTarget)
+        startTransition(async () => {
+          try {
+            await submitReview({
+              product_slug: slug,
+              rating,
+              title: String(form.get("title") ?? ""),
+              body: String(form.get("body") ?? ""),
+              author_name: String(form.get("author_name") ?? "").trim() || "MEHR client",
+            })
+            toast.success("Thank you — your review is live.")
+            onDone()
+          } catch {
+            toast.error("Couldn't post that review. Please check the fields and retry.")
+          }
+        })
+      }}
+    >
+      <fieldset>
+        <legend className="text-eyebrow text-muted-foreground">Your rating</legend>
+        <div className="mt-2 flex gap-1">
+          {[1, 2, 3, 4, 5].map((value) => (
+            <button
+              key={value}
+              type="button"
+              onClick={() => setRating(value)}
+              aria-label={`${value} star${value > 1 ? "s" : ""}`}
+              aria-pressed={rating === value}
+            >
+              <Star
+                width={22}
+                height={22}
+                strokeWidth={1.5}
+                className={cn(
+                  "transition-colors",
+                  value <= rating ? "fill-gold text-gold" : "text-muted-foreground",
+                )}
+              />
+            </button>
+          ))}
+        </div>
+      </fieldset>
+
+      <div className="grid gap-4 sm:grid-cols-2">
+        <label className="text-sm">
+          <span className="text-eyebrow text-muted-foreground">Your name</span>
+          <input
+            name="author_name"
+            defaultValue={authorName}
+            required
+            minLength={2}
+            className="mt-2 h-10 w-full rounded-md border bg-background px-3 text-sm outline-none focus-visible:border-primary"
+          />
+        </label>
+        <label className="text-sm">
+          <span className="text-eyebrow text-muted-foreground">Headline</span>
+          <input
+            name="title"
+            placeholder="Optional"
+            className="mt-2 h-10 w-full rounded-md border bg-background px-3 text-sm outline-none focus-visible:border-primary"
+          />
+        </label>
+      </div>
+
+      <label className="text-sm">
+        <span className="text-eyebrow text-muted-foreground">Your review</span>
+        <textarea
+          name="body"
+          required
+          minLength={4}
+          rows={4}
+          placeholder="How does it fit? How is the fabric?"
+          className="mt-2 w-full rounded-md border bg-background p-3 text-sm outline-none focus-visible:border-primary"
+        />
+      </label>
+
+      <button
+        type="submit"
+        disabled={pending}
+        className="justify-self-start rounded-md bg-primary px-6 py-3 text-xs tracking-[0.18em] uppercase text-primary-foreground disabled:opacity-60"
+      >
+        {pending ? "Posting…" : "Post review"}
+      </button>
+    </form>
   )
 }

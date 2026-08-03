@@ -6,7 +6,6 @@ const nextConfig = {
   images: {
     unoptimized: true,
   },
-  serverExternalPackages: ['pg', 'drizzle-orm'],
 }
 
 export default nextConfig

@@ -1,70 +1,45 @@
-'use client'
+"use client";
 
-import { useEffect, useState } from 'react'
-import type { Product } from '@/lib/db/schema'
-import { getRecentlyViewedProducts } from '@/app/actions/recently-viewed'
-import { ProductRail } from '@/components/home/product-rail'
+import { useEffect, useState } from "react";
+import type { Product } from "@/lib/catalog";
+import { readRecentlyViewed } from "@/lib/recently-viewed";
+import { ProductCard } from "@/components/product-card";
+import { Reveal } from "@/components/reveal";
 
-const KEY = 'ml_recently_viewed'
-const MAX = 12
+export function RecentlyViewed({
+  catalogue,
+  excludeSlug,
+  title = "Recently viewed",
+}: {
+  catalogue: Product[];
+  excludeSlug?: string;
+  title?: string;
+}) {
+  const [slugs, setSlugs] = useState<string[]>([]);
 
-function readIds(): number[] {
-  if (typeof window === 'undefined') return []
-  try {
-    const raw = window.localStorage.getItem(KEY)
-    if (!raw) return []
-    const parsed = JSON.parse(raw)
-    return Array.isArray(parsed) ? parsed.filter((n) => Number.isInteger(n)) : []
-  } catch {
-    return []
-  }
-}
+  // Read after hydration so server and client markup match.
+  useEffect(() => setSlugs(readRecentlyViewed()), []);
 
-/**
- * Records the current product id at the front of the per-device recently-viewed
- * list. Renders nothing.
- */
-export function RecentlyViewedTracker({ productId }: { productId: number }) {
-  useEffect(() => {
-    const ids = readIds().filter((id) => id !== productId)
-    ids.unshift(productId)
-    try {
-      window.localStorage.setItem(KEY, JSON.stringify(ids.slice(0, MAX)))
-    } catch {
-      // ignore quota / privacy-mode errors
-    }
-  }, [productId])
+  const products = slugs
+    .filter((slug) => slug !== excludeSlug)
+    .map((slug) => catalogue.find((product) => product.slug === slug))
+    .filter((product): product is Product => Boolean(product))
+    .slice(0, 4);
 
-  return null
-}
-
-/**
- * Displays a rail of recently-viewed products (device-local), optionally
- * excluding the current product. Hydrates ids into product records on mount.
- */
-export function RecentlyViewed({ excludeId }: { excludeId?: number }) {
-  const [products, setProducts] = useState<Product[]>([])
-
-  useEffect(() => {
-    const ids = readIds().filter((id) => id !== excludeId)
-    if (ids.length === 0) return
-    let active = true
-    getRecentlyViewedProducts(ids).then((rows) => {
-      if (active) setProducts(rows)
-    })
-    return () => {
-      active = false
-    }
-  }, [excludeId])
-
-  if (products.length === 0) return null
+  if (products.length === 0) return null;
 
   return (
-    <ProductRail
-      eyebrow="Recently viewed"
-      title="Pick up where you left off"
-      viewAllHref="/products"
-      products={products}
-    />
-  )
+    <section className="mt-16 border-t border-border pt-12">
+      <Reveal>
+        <h2 className="font-display text-3xl">{title}</h2>
+      </Reveal>
+      <div className="mt-8 grid grid-cols-2 gap-x-3 gap-y-8 sm:gap-x-5 lg:grid-cols-4">
+        {products.map((product, index) => (
+          <Reveal key={product.slug} delay={(index % 4) * 80}>
+            <ProductCard product={product} />
+          </Reveal>
+        ))}
+      </div>
+    </section>
+  );
 }

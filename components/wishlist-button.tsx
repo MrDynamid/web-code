@@ -1,91 +1,52 @@
-'use client'
+"use client";
 
-import { useState, useTransition } from 'react'
-import { Heart, Loader2 } from 'lucide-react'
-import { toast } from 'sonner'
-import { toggleWishlist } from '@/app/actions/wishlist'
-import { Button } from '@/components/ui/button'
-import { cn } from '@/lib/utils'
+import { useRouter } from "next/navigation";
+import { Heart } from "lucide-react";
+import { toast } from "sonner";
+import { useWishlist } from "@/lib/wishlist";
+import { cn } from "@/lib/utils";
 
 export function WishlistButton({
-  productId,
-  initialWishlisted = false,
-  variant = 'overlay',
-  onRemoved,
+  slug,
+  className,
+  label = false,
 }: {
-  productId: number
-  initialWishlisted?: boolean
-  variant?: 'overlay' | 'inline'
-  onRemoved?: () => void
+  slug: string;
+  className?: string;
+  label?: boolean;
 }) {
-  const [wishlisted, setWishlisted] = useState(initialWishlisted)
-  const [pending, startTransition] = useTransition()
-
-  function handleToggle(e: React.MouseEvent) {
-    // Product cards wrap the button in a Link — don't navigate on click.
-    e.preventDefault()
-    e.stopPropagation()
-    if (pending) return
-
-    startTransition(async () => {
-      const result = await toggleWishlist(productId)
-      if (!result.ok) {
-        toast.error(result.error, {
-          action: {
-            label: 'Sign in',
-            onClick: () => {
-              window.location.href = '/login?redirect=/wishlist'
-            },
-          },
-        })
-        return
-      }
-      setWishlisted(result.wishlisted)
-      toast.success(result.wishlisted ? 'Saved to wishlist' : 'Removed from wishlist')
-      if (!result.wishlisted) onRemoved?.()
-    })
-  }
-
-  if (variant === 'inline') {
-    return (
-      <Button
-        type="button"
-        variant="outline"
-        onClick={handleToggle}
-        disabled={pending}
-        className="h-12 gap-2"
-        aria-pressed={wishlisted}
-      >
-        {pending ? (
-          <Loader2 className="size-4 animate-spin" />
-        ) : (
-          <Heart
-            className={cn('size-4', wishlisted && 'fill-gold text-gold')}
-            strokeWidth={1.5}
-          />
-        )}
-        {wishlisted ? 'Saved' : 'Add to wishlist'}
-      </Button>
-    )
-  }
+  const router = useRouter();
+  const { isSaved, toggle, pending, isAuthenticated } = useWishlist();
+  const saved = isSaved(slug);
 
   return (
     <button
       type="button"
-      onClick={handleToggle}
+      aria-label={saved ? "Remove from wishlist" : "Save to wishlist"}
+      aria-pressed={saved}
       disabled={pending}
-      aria-label={wishlisted ? 'Remove from wishlist' : 'Add to wishlist'}
-      aria-pressed={wishlisted}
-      className="absolute top-3 right-3 z-10 inline-flex size-9 items-center justify-center rounded-full bg-background/80 text-foreground backdrop-blur-sm transition-colors hover:bg-background"
-    >
-      {pending ? (
-        <Loader2 className="size-4 animate-spin" />
-      ) : (
-        <Heart
-          className={cn('size-4', wishlisted && 'fill-gold text-gold')}
-          strokeWidth={1.5}
-        />
+      onClick={(event) => {
+        event.preventDefault();
+        event.stopPropagation();
+        if (!isAuthenticated) {
+          toast.info("Sign in to save pieces you love.");
+          router.push(`/auth?redirect=${encodeURIComponent(`/product/${slug}`)}`);
+          return;
+        }
+        toggle(slug);
+      }}
+      className={cn(
+        "inline-flex items-center gap-2 rounded-full border border-border bg-card/90 px-3 py-2 text-xs backdrop-blur transition-all duration-300 hover:border-gold hover:text-primary disabled:opacity-60",
+        className,
       )}
+    >
+      <Heart
+        width={15}
+        height={15}
+        strokeWidth={1.6}
+        className={cn("transition-all duration-300", saved && "fill-primary text-primary scale-110")}
+      />
+      {label ? <span>{saved ? "Saved" : "Save"}</span> : null}
     </button>
-  )
+  );
 }

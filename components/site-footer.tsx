@@ -1,133 +1,126 @@
-'use client'
+"use client";
 
-import Link from 'next/link'
-import { useState, useTransition } from 'react'
-import { toast } from 'sonner'
-import { Input } from '@/components/ui/input'
-import { Button } from '@/components/ui/button'
-import { subscribeNewsletter } from '@/app/actions/newsletter'
+import { useState, useTransition } from "react";
+import Link from "next/link";
+import { Instagram, Mail } from "lucide-react";
+import { toast } from "sonner";
+import { Input } from "@/components/ui/input";
+import { Button } from "@/components/ui/button";
+import { subscribeNewsletter } from "@/lib/catalog.actions";
 
-const FOOTER_COLUMNS = [
-  {
-    title: 'Shop',
-    links: [
-      { label: 'New Arrivals', href: '/products?sort=newest' },
-      { label: 'Dresses', href: '/products?category=Dresses' },
-      { label: 'Outerwear', href: '/products?category=Outerwear' },
-      { label: 'Knitwear', href: '/products?category=Knitwear' },
-      { label: 'Accessories', href: '/products?category=Accessories' },
-    ],
-  },
-  {
-    title: 'Client Care',
-    links: [
-      { label: 'Track Your Order', href: '/orders' },
-      { label: 'Shipping & Returns', href: '/shipping-returns' },
-      { label: 'Size Guide', href: '/size-guide' },
-      { label: 'Contact Us', href: '/contact' },
-    ],
-  },
-  {
-    title: 'The House',
-    links: [
-      { label: 'Our Story', href: '/about#story' },
-      { label: 'Sustainability', href: '/about#sustainability' },
-      { label: 'Journal', href: '/about#journal' },
-      { label: 'Careers', href: '/about#careers' },
-    ],
-  },
-]
+const HELP_LINKS = [
+  { label: "Size guide", href: "/size-guide" },
+  { label: "Shipping & returns", href: "/shipping-returns" },
+  { label: "Contact us", href: "/contact" },
+  { label: "Track your order", href: "/orders" },
+];
 
-export function SiteFooter() {
-  const [email, setEmail] = useState('')
-  const [pending, startTransition] = useTransition()
-  const [subscribed, setSubscribed] = useState(false)
+export function SiteFooter({
+  categories,
+}: {
+  categories: { slug: string; name: string }[];
+}) {
+  const [email, setEmail] = useState("");
+  const [pending, startTransition] = useTransition();
 
-  function handleSubscribe(e: React.FormEvent) {
-    e.preventDefault()
-    const fd = new FormData()
-    fd.append('email', email)
+  function subscribe(event: React.FormEvent) {
+    event.preventDefault();
     startTransition(async () => {
-      const res = await subscribeNewsletter(null, fd)
-      if (res?.ok) {
-        setSubscribed(true)
-        toast.success('You\'re on the list!')
-      } else if (res?.error) {
-        toast.error(res.error)
+      try {
+        const result = await subscribeNewsletter({ email });
+        if (!result.ok) {
+          toast.error(result.message ?? "Please try again later.");
+          return;
+        }
+        setEmail("");
+        toast.success("You're on the list. Welcome to MEHR.");
+      } catch {
+        toast.error("Please enter a valid email address.");
       }
-    })
+    });
   }
 
   return (
-    <footer className="mt-20 border-t border-border bg-secondary/40">
-      <div className="mx-auto max-w-7xl px-4 py-16 md:px-6">
-        <div className="grid gap-12 lg:grid-cols-[1.4fr_1fr_1fr_1fr]">
-          <div className="max-w-sm">
-            <h2 className="font-serif text-2xl tracking-tight">Maison Lumière</h2>
-            <p className="mt-3 text-sm leading-relaxed text-muted-foreground">
-              Considered ready-to-wear crafted from the finest natural fibres. Join our list
-              for early access to new collections and private events.
+    <footer className="mt-20 border-t border-border bg-secondary/50">
+      <div className="mx-auto max-w-7xl px-4 py-14 sm:px-6">
+        <div className="grid gap-10 md:grid-cols-2 lg:grid-cols-4">
+          <div className="lg:col-span-1">
+            <p className="font-display text-3xl tracking-[0.28em]">MEHR</p>
+            <p className="mt-3 max-w-xs text-sm leading-relaxed text-muted-foreground">
+              Handloom womenswear from Varanasi, Kanchipuram, Lucknow and Bagru — made in small runs
+              by the families who have always made it.
             </p>
-            {subscribed ? (
-              <p className="mt-5 text-sm font-medium text-gold">
-                Thank you — you&apos;re on the list.
-              </p>
-            ) : (
-              <form onSubmit={handleSubscribe} className="mt-5 flex gap-2" aria-label="Newsletter signup">
-                <Input
-                  type="email"
-                  required
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  placeholder="Email address"
-                  aria-label="Email address"
-                  className="h-11 rounded-sm bg-background"
-                />
-                <Button type="submit" disabled={pending} className="h-11 shrink-0 px-6">
-                  {pending ? '…' : 'Subscribe'}
-                </Button>
-              </form>
-            )}
+            <a
+              href="https://instagram.com"
+              target="_blank"
+              rel="noreferrer noopener"
+              className="mt-5 inline-flex items-center gap-2 text-sm text-muted-foreground transition-colors hover:text-primary"
+            >
+              <Instagram width={16} height={16} strokeWidth={1.5} />
+              @mehr.handloom
+            </a>
           </div>
 
-          {FOOTER_COLUMNS.map((column) => (
-            <div key={column.title}>
-              <h3 className="text-xs font-medium tracking-[0.2em] text-muted-foreground uppercase">
-                {column.title}
-              </h3>
-              <ul className="mt-4 space-y-3">
-                {column.links.map((link) => (
-                  <li key={link.label}>
-                    <Link
-                      href={link.href}
-                      className="text-sm text-foreground/80 transition-colors hover:text-gold"
-                    >
-                      {link.label}
-                    </Link>
-                  </li>
-                ))}
-              </ul>
-            </div>
-          ))}
+          <nav>
+            <h2 className="text-eyebrow text-muted-foreground">Shop</h2>
+            <ul className="mt-4 space-y-2.5 text-sm">
+              {categories.map((category) => (
+                <li key={category.slug}>
+                  <Link
+                    href={`/shop?category=${category.slug}`}
+                    className="link-underline transition-colors hover:text-primary"
+                  >
+                    {category.name}
+                  </Link>
+                </li>
+              ))}
+            </ul>
+          </nav>
+
+          <nav>
+            <h2 className="text-eyebrow text-muted-foreground">Help</h2>
+            <ul className="mt-4 space-y-2.5 text-sm">
+              {HELP_LINKS.map((link) => (
+                <li key={link.href}>
+                  <Link href={link.href} className="link-underline transition-colors hover:text-primary">
+                    {link.label}
+                  </Link>
+                </li>
+              ))}
+              <li>
+                <Link href="/about" className="link-underline transition-colors hover:text-primary">
+                  Our craft
+                </Link>
+              </li>
+            </ul>
+          </nav>
+
+          <div>
+            <h2 className="text-eyebrow text-muted-foreground">The atelier letter</h2>
+            <p className="mt-4 text-sm text-muted-foreground">
+              New drops, weaver stories and early access. No noise.
+            </p>
+            <form className="mt-4 flex gap-2" onSubmit={subscribe}>
+              <Input
+                type="email"
+                required
+                value={email}
+                onChange={(event) => setEmail(event.target.value)}
+                placeholder="you@email.com"
+                aria-label="Email address"
+              />
+              <Button type="submit" disabled={pending} aria-label="Subscribe">
+                <Mail width={16} height={16} strokeWidth={1.6} />
+              </Button>
+            </form>
+          </div>
         </div>
 
-        <div className="mt-14 flex flex-col items-center justify-between gap-4 border-t border-border pt-8 text-xs text-muted-foreground md:flex-row">
-          <p>© {new Date().getFullYear()} Maison Lumière. All rights reserved.</p>
-<<<<<<< HEAD
-          <div className="flex flex-wrap justify-center gap-6">
-            <Link href="/legal#privacy" className="transition-colors hover:text-foreground">Privacy Policy</Link>
-            <Link href="/legal#terms" className="transition-colors hover:text-foreground">Terms of Service</Link>
-            <Link href="/legal#accessibility" className="transition-colors hover:text-foreground">Accessibility</Link>
-            <Link href="/admin" className="transition-colors hover:text-foreground">Admin</Link>
-=======
-          <div className="flex gap-6">
-            <Link href="/" className="transition-colors hover:text-foreground">Privacy Policy</Link>
-            <Link href="/" className="transition-colors hover:text-foreground">Terms of Service</Link>
-            <Link href="/" className="transition-colors hover:text-foreground">Accessibility</Link>
->>>>>>> b40138d1871002c6187013e20ed0edbe04d957d4
-          </div>
+        <div className="mt-12 flex flex-col gap-3 border-t border-border pt-6 text-xs text-muted-foreground sm:flex-row sm:items-center sm:justify-between">
+          <p>© {new Date().getFullYear()} MEHR Handloom. Made in India.</p>
+          <p>Secure payments · UPI, cards, netbanking &amp; cash on delivery</p>
         </div>
       </div>
     </footer>
-  )
+  );
 }

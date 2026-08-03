@@ -1,77 +1,83 @@
-export const dynamic = 'force-dynamic'
+import type { Metadata } from "next"
+import Link from "next/link"
+import { redirect } from "next/navigation"
+import { Heart, MapPin, Package } from "lucide-react"
+import { getProfile } from "@/lib/account.actions"
+import { getSession } from "@/lib/session"
+import { AccountProfileForm } from "@/components/account-profile-form"
 
-import Link from 'next/link'
-import { redirect } from 'next/navigation'
-import { Heart, Package, ArrowRight } from 'lucide-react'
-import { getSession } from '@/lib/admin-auth'
-import { getUserOrders } from '@/app/actions/orders'
-import { getWishlistProducts } from '@/app/actions/wishlist'
-import { SignOutButton } from '@/components/sign-out-button'
-
-export const metadata = {
-  title: 'My account',
+export const metadata: Metadata = {
+  title: "Your account",
+  robots: { index: false, follow: false },
 }
 
 export default async function AccountPage() {
   const session = await getSession()
-  if (!session?.user) redirect('/login?redirect=/account')
+  if (!session?.user) redirect("/auth?redirect=/account")
 
-  const [orders, wishlist] = await Promise.all([
-    getUserOrders(),
-    getWishlistProducts(),
-  ])
+  const { profile, address, orderCount } = await getProfile()
+
+  const tiles = [
+    {
+      href: "/orders",
+      icon: Package,
+      label: "Orders",
+      value: orderCount === 0 ? "None yet" : `${orderCount} placed`,
+    },
+    {
+      href: "/wishlist",
+      icon: Heart,
+      label: "Wishlist",
+      value: "Saved pieces",
+    },
+    {
+      href: "/checkout",
+      icon: MapPin,
+      label: "Address",
+      value: address ? `${address.city}, ${address.state}` : "Not saved yet",
+    },
+  ]
 
   return (
-    <div className="mx-auto max-w-4xl px-4 py-12 md:px-6 md:py-16">
-      <div className="flex flex-col gap-2">
-        <p className="text-[11px] tracking-[0.2em] text-muted-foreground uppercase">My account</p>
-        <h1 className="font-serif text-4xl tracking-tight md:text-5xl">
-          Hello, {session.user.name?.split(' ')[0] || 'there'}
+    <div className="mx-auto max-w-4xl px-4 py-12 sm:px-6 lg:py-16">
+      <header>
+        <p className="text-eyebrow text-muted-foreground">Your account</p>
+        <h1 className="mt-2 font-display text-4xl sm:text-5xl">
+          {profile.full_name ? `Hello, ${profile.full_name.split(" ")[0]}` : "Hello"}
         </h1>
-        <p className="text-sm text-muted-foreground">{session.user.email}</p>
+        <p className="mt-3 max-w-md text-sm leading-relaxed text-muted-foreground">
+          {session.user.email}
+        </p>
+      </header>
+
+      <div className="mt-10 grid gap-4 sm:grid-cols-3">
+        {tiles.map((tile) => (
+          <Link
+            key={tile.href}
+            href={tile.href}
+            className="group rounded-lg border bg-card p-5 transition-colors hover:border-primary/40"
+          >
+            <span className="grid size-9 place-items-center rounded-lg bg-primary/10 text-primary">
+              <tile.icon width={18} height={18} strokeWidth={1.6} />
+            </span>
+            <p className="mt-4 text-xs tracking-wide text-muted-foreground uppercase">{tile.label}</p>
+            <p className="mt-1 text-sm transition-colors group-hover:text-primary">{tile.value}</p>
+          </Link>
+        ))}
       </div>
 
-      <div className="mt-10 grid gap-6 sm:grid-cols-2">
-        <Link
-          href="/orders"
-          className="group flex flex-col gap-4 rounded-sm border border-border bg-card p-6 transition-colors hover:border-foreground/30"
-        >
-          <div className="flex items-center justify-between">
-            <Package className="size-6 text-gold" strokeWidth={1.5} />
-            <ArrowRight className="size-4 text-muted-foreground transition-transform group-hover:translate-x-1" />
-          </div>
-          <div>
-            <h2 className="font-serif text-2xl tracking-tight">Orders</h2>
-            <p className="mt-1 text-sm text-muted-foreground">
-              {orders.length === 0
-                ? 'You have no orders yet.'
-                : `${orders.length} order${orders.length > 1 ? 's' : ''} placed.`}
-            </p>
-          </div>
-        </Link>
-
-        <Link
-          href="/wishlist"
-          className="group flex flex-col gap-4 rounded-sm border border-border bg-card p-6 transition-colors hover:border-foreground/30"
-        >
-          <div className="flex items-center justify-between">
-            <Heart className="size-6 text-gold" strokeWidth={1.5} />
-            <ArrowRight className="size-4 text-muted-foreground transition-transform group-hover:translate-x-1" />
-          </div>
-          <div>
-            <h2 className="font-serif text-2xl tracking-tight">Wishlist</h2>
-            <p className="mt-1 text-sm text-muted-foreground">
-              {wishlist.length === 0
-                ? 'Nothing saved yet.'
-                : `${wishlist.length} piece${wishlist.length > 1 ? 's' : ''} saved.`}
-            </p>
-          </div>
-        </Link>
-      </div>
-
-      <div className="mt-10 border-t border-border pt-8">
-        <SignOutButton />
-      </div>
+      <section className="mt-12">
+        <h2 className="font-display text-2xl">Your details</h2>
+        <p className="mt-2 text-sm text-muted-foreground">
+          We use these to prefill checkout and to reach you about a delivery.
+        </p>
+        <div className="mt-6 rounded-lg border bg-card p-6">
+          <AccountProfileForm
+            fullName={profile.full_name ?? ""}
+            phone={profile.phone ?? ""}
+          />
+        </div>
+      </section>
     </div>
   )
 }
